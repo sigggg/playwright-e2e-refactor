@@ -1,0 +1,72 @@
+{
+  "name": "playwright-e2e-tests",
+  "version": "1.0.0",
+  "description": "Playwright E2Eテスト実行のための最小構成テンプレート",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report",
+    "test:logout": "playwright test --config=logout-test-config.ts",
+    "test:login": "playwright test --config=login-test-config.ts",
+    "install:browsers": "playwright install",
+    "install:deps": "npm install"
+  },
+  "keywords": [
+    "playwright", 
+    "e2e", 
+    "page-object-model", 
+    "shared-components",
+    "m3-services"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "dotenv": "^16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "config": {
+    "shared-e2e-components": "./shared-e2e-components",
+    "test-directory": "./testcase"
+  },
+  "comments": {
+    "description": "このpackage.jsonはPlaywright E2Eテスト実行のための最小構成です",
+    "shared-components": "shared-e2e-componentsフォルダの共通コンポーネントを活用",
+    "scripts": {
+      "test": "デフォルトのテスト実行（playwright.config.ts使用）",
+      "test:headed": "ブラウザ表示でテスト実行（デバッグ用）", 
+      "test:debug": "デバッグモードでテスト実行",
+      "test:logout": "ログアウト専用テスト設定で実行",
+      "test:login": "ログイン専用テスト設定で実行"
+    },
+    "dependencies": {
+      "@playwright/test": "Playwright テストフレームワーク本体",
+      "typescript": "TypeScript実行環境（Page Object Model用）",
+      "dotenv": "環境変数管理（認証情報等）",
+      "@types/node": "Node.js型定義（TypeScript用）"
+    },
+    "usage": [
+      "1. npm install でパッケージインストール",
+      "2. playwright install でブラウザインストール", 
+      "3. .env ファイルで認証情報設定",
+      "4. npm test でテスト実行"
+    ],
+    "claude-md-compliance": {
+      "日本語対応": "コメント・ログ・エラーメッセージは日本語で出力",
+      "Page Object Model": "shared-e2e-componentsの活用を前提",
+      "共通基盤活用": "M3認証・ヘッダ・フッタ等の共通コンポーネント利用",
+      "型安全性": "TypeScriptによる型安全なテスト実装"
+    }
+  }
+}

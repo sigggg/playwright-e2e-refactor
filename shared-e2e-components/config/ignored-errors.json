@@ -1,0 +1,40 @@
+{
+  "ignoredRequestFailures": [
+    {
+      "url": "google-analytics.com",
+      "reason": "Google Analytics接続失敗は無視"
+    },
+    {
+      "url": "doubleclick.net",
+      "reason": "広告スクリプト関連は無視"
+    },
+    {
+      "url": "googletagmanager.com",
+      "reason": "Google Tag Manager関連は無視"
+    }
+  ],
+  "ignoredConsoleErrors": [
+    {
+      "pattern": "Failed to load resource.*google-analytics",
+      "reason": "Google Analytics読み込み失敗は無視"
+    },
+    {
+      "pattern": "Non-Error promise rejection captured",
+      "reason": "一般的な非エラーPromise拒否は無視"
+    },
+    {
+      "pattern": "ResizeObserver loop limit exceeded",
+      "reason": "ResizeObserver関連の一般的な警告は無視"
+    }
+  ],
+  "ignoredPageErrors": [
+    {
+      "pattern": "Script error",
+      "reason": "クロスオリジンスクリプトエラーは無視"
+    },
+    {
+      "pattern": "Network request failed",
+      "reason": "一般的なネットワークエラーは無視"
+    }
+  ]
+}
