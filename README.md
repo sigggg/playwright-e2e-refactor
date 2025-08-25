@@ -9,7 +9,7 @@ MablからPlaywrightへのE2Eテストリファクタリング共通基盤プロ
 ## プロジェクト構成
 
 ```
-workspace/
+playwright-e2e-refactor/
 ├── .claude/                     # Claude専用設定フォルダ
 │   ├── CLAUDE.md               # リファクタリングガイドライン（最重要）
 │   └── service/                # サービス固有の設定
@@ -25,40 +25,68 @@ workspace/
 
 ## 他プロジェクトへの展開手順
 
-### Phase 0: Mablテストの出力
-
-リファクタリング開始前に、Mablからテストシナリオを出力してください：
+### Phase 0: このリポジトリをclone
 
 ```bash
-# Mablテストの出力（対象テストのIDを指定）
-mabl tests export --format "playwright" <mabl-test-id>
-
-# 出力されたファイルをtestcaseフォルダに配置
-mkdir testcase
-mv *.mabl.spec.ts testcase/
+git clone https://rendezvous.m3.com/yuichiro-sueyoshi/playwright-e2e-refactor.git
 ```
 
-### Phase 1: 基盤配置
-
-新しいサービスのE2Eテストリファクタリング時は、以下のファイルを展開先に配置してください：
+### Phase 1: 環境セットアップ
 
 ```bash
-# 新プロジェクトフォルダに基盤ファイルを配置
-cp -r .claude/ {new-project}/
-cp -r shared-e2e-components/ {new-project}/
-cp playwright.config.ts {new-project}/playwright.config.template.ts
-cp tsconfig.json {new-project}/
-```
+# cloneしたフォルダ内部に移動
+cd playwright-e2e-refactor
 
-### Phase 2: 環境セットアップ
-
-```bash
 # 依存関係のインストール
 npm install @playwright/test dotenv
 npx playwright install
 ```
 
-### Phase 3: プロジェクト固有のカスタマイズ
+### Phase 2: Mablテストの出力
+
+リファクタリング開始前に、Mablからテストシナリオを出力してください：
+
+```bash
+# testcaseフォルダに移動
+cd testcase
+
+# Mablテストの出力（対象テストのIDを指定）
+mabl tests export --format "playwright" <mabl-test-id>
+```
+
+### Phase 3: claude起動
+
+```bash
+# playwright-e2e-refactorに戻り
+cd ../
+
+# claudeを起動(起動が成功すれば初期設定でdark themeを選択する画面が現れるはず)
+claude
+
+# .claudeフォルダ配下のclaude.mdをルールとして読み込ませる
+```
+> 以降のやりとりでは.claudeフォルダ配下のclaude.mdを読み込んで
+
+⏺ Read(.claude/claude.md)
+  ⎿  Read 250 lines (ctrl+r to expand)
+  ⎿  .claude/CLAUDE.md
+
+⏺ claude.mdを読み込みました。今後のやりとりでは、このガイダンスに従ってMablからPlaywrightへのE2Eテストリファクタリング作業をサポートします。
+
+  何か具体的な作業をお手伝いしましょうか？例えば：
+
+  - 元のMablテストの動作確認
+  - 特定のサービスの仕様ファイル作成
+  - リファクタリング作業の開始
+  - 共通基盤の設定
+
+  どの作業から始めたいか教えてください。
+```
+
+
+```
+
+### Phase 4: プロジェクト固有のカスタマイズ
 
 1. **`playwright.config.ts`** - テスト対象URL、プロジェクト設定を調整
 2. **`tests/data/`** - サービス固有のテストデータ・型定義を作成
