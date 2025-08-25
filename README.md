@@ -64,7 +64,9 @@ cd ../
 claude
 
 # .claudeフォルダ配下のclaude.mdをルールとして読み込ませる
-```
+
+
+```bash
 > 以降のやりとりでは.claudeフォルダ配下のclaude.mdを読み込んで
 
 ⏺ Read(.claude/claude.md)
