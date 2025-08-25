@@ -63,10 +63,7 @@ cd ../
 # claudeを起動(起動が成功すれば初期設定でdark themeを選択する画面が現れるはず)
 claude
 
-# .claudeフォルダ配下のclaude.mdをルールとして読み込ませる
-
-
-```bash
+# >のチャット待ち受け画面に以下を入力し、.claudeフォルダ配下のclaude.mdをルールとして読み込ませる
 > 以降のやりとりでは.claudeフォルダ配下のclaude.mdを読み込んで
 
 ⏺ Read(.claude/claude.md)
@@ -83,9 +80,6 @@ claude
   - 共通基盤の設定
 
   どの作業から始めたいか教えてください。
-```
-
-
 ```
 
 ### Phase 4: プロジェクト固有のカスタマイズ
