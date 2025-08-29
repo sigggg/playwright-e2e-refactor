@@ -1,8 +1,5 @@
 import { Page, expect } from '@playwright/test'
 
-/**
- * M3.com認証情報のインターフェース
- */
 export interface LoginCredentials {
   username: string
   password: string
@@ -13,319 +10,389 @@ export interface LoginCredentials {
  * 
  * @description
  * - M3.com認証処理の共通実装を提供
+ * - **役割ベースセレクタを優先**した要素選択戦略を採用
+ * - 段階的セレクタ戦略（役割ベース → data-testid → CSSセレクタ）による堅牢な認証処理
  * - ログイン・ログアウト・認証状態確認などの基本機能
  * - APIレスポンス監視による確実な認証状態判定
  * - 複数のM3サービスで共通利用可能
  * - エラーハンドリングと詳細なログ出力を内蔵
  * 
+ * ## セレクタ選択の改善点
+ * - **アクセシビリティ重視**: WAI-ARIAの役割、ラベル、プレースホルダーを優先
+ * - **段階的フォールバック**: 役割ベース → data-testid → CSSセレクタの順で試行
+ * - **保守性向上**: セマンティックな意味に基づく要素特定で変更に強い実装
+ * 
  * @example
  * ```typescript
  * const authHelper = new AuthHelper(page);
- * await authHelper.loginToM3AndRedirectToService({
+ * await authHelper.loginToM3AndNavigateToEbook({
  *   username: 'test@example.com',
  *   password: 'password123'
- * }, 'https://ebook-qa1.m3.com');
+ * });
+ * 
+ * // ログアウト（役割ベースセレクタで自動検出）
+ * await authHelper.logout();
  * ```
  */
 export class AuthHelper {
   private page: Page
 
-  constructor(page: Page) {
+  constructor (page: Page) {
     this.page = page
   }
 
   /**
-   * M3.comログイン → 指定サービスへの遷移（統合メソッド）
-   * 
-   * @param credentials ログイン認証情報
-   * @param targetServiceUrl 遷移先サービスURL（省略時は環境変数から取得）
+   * m3.comにログインして、手動でebook-qa1.m3.comにアクセスする
+   * @param credentials { username, password } ログインに使用する認証情報
    * @description
-   * - M3.comでのログイン処理から指定サービスサイトでの認証状態確認まで一括実行
-   * - 各サービスのテストで最も頻繁に利用される統合メソッド
-   * - 内部でloginToM3()とnavigateToService()を順次実行
+   * - m3.comでログイン後、ebookサイト(qa1/qa2)へ手動ナビゲートし、ログイン状態を検証する。
+   * - QA環境切り替えはprocess.env.TEST_BASE_URLで制御。
+   * - テスト自動化のための一連のログインフローを再利用可能な形で提供。
    */
-  async loginToM3AndRedirectToService(credentials: LoginCredentials, targetServiceUrl?: string): Promise<void> {
-    const serviceUrl = targetServiceUrl || process.env.TEST_BASE_URL || 'https://ebook-qa1.m3.com'
+  async loginToM3AndNavigateToEbook (credentials: LoginCredentials): Promise<void> {
+    const m3comURL = 'https://www.m3.com' // プロキシでQA環境に切り替え
+    const ebookURL = process.env.TEST_BASE_URL || 'https://ebook-qa1.m3.com'
 
-    console.log('🔐 M3統合ログイン処理を開始します...')
+    console.log('🔐 Starting login process...')
 
-    // 1. M3.comでのログイン処理
-    await this.loginToM3(credentials)
-
-    // 2. 対象サービスサイトに遷移
-    await this.navigateToService(serviceUrl)
-
-    // 3. サービスサイトでの認証状態確認
-    await this.verifyServiceLoginState()
-
-    console.log('✅ M3統合ログイン処理が正常に完了しました')
-  }
-
-  /**
-   * M3.comでのログイン処理
-   * 
-   * @param credentials ログイン認証情報
-   * @description
-   * - M3.comサイトでの認証処理のみを実行
-   * - サービス遷移は含まない独立したログイン処理
-   */
-  async loginToM3(credentials: LoginCredentials): Promise<void> {
-    const m3comURL = 'https://www.m3.com'
-
-    console.log('🔐 M3.comログイン処理を開始中...')
-
-    // 1. M3.comにアクセス
-    console.log(`📡 ${m3comURL} にナビゲート中...`)
+    // 1. www.m3.comにアクセス（プロキシでQA環境に切り替え）
+    console.log(`📡 Navigating to ${m3comURL}`)
     try {
       await this.page.goto(m3comURL, {
         waitUntil: 'domcontentloaded',
         timeout: 60000
       })
+      // 追加の待機時間
       await this.page.waitForTimeout(3000)
     } catch (error) {
-      console.warn(`⚠️ 初期ナビゲーション失敗、loadイベントで再試行: ${error.message}`)
+      console.warn(`⚠️ Initial navigation failed, trying with load event: ${error.message}`)
       await this.page.goto(m3comURL, {
         waitUntil: 'load',
         timeout: 60000
       })
     }
 
-    // 2. ログインボタンの確認とクリック
+    // 2. ログインボタンを探してクリック
     await this.clickLoginButton()
 
-    // 3. ログイン情報の入力
+    // 3. ログイン情報を入力
     await this.fillLoginForm(credentials)
 
     // 4. ログイン実行
     await this.submitLogin()
 
-    // 5. M3.comでのログイン成功確認
+    // 5. ログイン成功を確認（m3.comで）
     await this.verifyLoginSuccess()
 
-    console.log('✅ M3.comログイン処理が完了しました')
+    // 6. ログイン完了後、直接ebook-qa1.m3.comに移動
+    console.log(`📡 Manually navigating to ${ebookURL} after login`)
+    console.log(`🔍 Current URL before navigation: ${this.page.url()}`)
+    
+    await this.page.goto(ebookURL, { waitUntil: 'domcontentloaded', timeout: 30000 })
+    
+    console.log(`🔍 URL after navigation: ${this.page.url()}`)
+    
+    // DOMが準備できるまで少し待機（画像404エラーを無視）
+    await this.page.waitForTimeout(2000)
+    
+    console.log(`🔍 Final URL after stabilization: ${this.page.url()}`)
+
+    // 7. ebook サイトでのログイン状態を確認
+    await this.verifyEbookLoginState()
+
+    console.log('✅ Login process completed successfully')
   }
 
   /**
-   * 指定サービスサイトへの遷移
-   * 
-   * @param serviceUrl 遷移先サービスのURL
+   * ログインボタンをクリック、またはフォームが既に表示されていればスキップ
    * @description
-   * - M3.comログイン後の状態で指定サービスサイトに遷移
-   * - ログイン状態を引き継いだ状態でサービスサイトにアクセス
+   * - m3.comのトップページでログインフォームが表示済みかを判定し、なければボタンを探してクリックする。
+   * - 役割ベースセレクタを優先した堅牢な検出を実装。
    */
-  async navigateToService(serviceUrl: string): Promise<void> {
-    console.log(`📡 サービスサイト ${serviceUrl} に遷移中...`)
-    await this.page.goto(serviceUrl, { waitUntil: 'networkidle' })
-    console.log(`✅ ${serviceUrl} への遷移が完了しました`)
-  }
+  private async clickLoginButton (): Promise<void> {
+    console.log('🔍 Checking if login form is already visible...')
 
-  /**
-   * ログインボタンのクリック処理
-   * @private
-   */
-  private async clickLoginButton(): Promise<void> {
-    console.log('🔍 ログインフォームの状態を確認中...')
-
-    // M3.comのトップページではログインフォームが既に表示されている場合が多い
+    // 役割ベースセレクタでログインフォームの存在確認
     try {
-      const loginIdField = this.page.locator('#loginId')
-      await expect(loginIdField).toBeVisible({ timeout: 10000 })
-      console.log('✅ ログインフォームが既に表示されています')
-      return
+      // ログインID入力フィールドを役割ベースで確認
+      const loginFields = [
+        this.page.getByLabel(/ログインID|メールアドレス|ユーザーID/i),
+        this.page.getByPlaceholder(/ログインID|メールアドレス|ユーザーID/i),
+        this.page.getByRole('textbox', { name: /ログインID|メールアドレス|ユーザーID/i }),
+        this.page.locator('#loginId') // フォールバック
+      ]
+      
+      for (const field of loginFields) {
+        try {
+          await expect(field).toBeVisible({ timeout: 3000 })
+          console.log('✅ Login form is already visible on the page')
+          return
+        } catch {
+          continue
+        }
+      }
+      
+      console.log('🔍 Login form not visible, looking for login button...')
     } catch (error) {
-      console.log('🔍 ログインフォームが非表示、ログインボタンを探索中...')
+      console.log('🔍 Login form not visible, looking for login button...')
     }
 
-    // ログインフォームが表示されていない場合のボタン探索
-    const loginSelectors = [
-      'a[href*="login"]',
-      'button:has-text("ログイン")',
-      'a:has-text("ログイン")',
-      '.login-btn',
-      '#login-btn',
-      '[data-testid="login"]'
+    // 役割ベースセレクタでログインボタンを探す（段階的戦略）
+    const loginStrategies = [
+      // 1. 役割ベースセレクタ（最優先）
+      this.page.getByRole('button', { name: /ログイン|login/i }),
+      this.page.getByRole('link', { name: /ログイン|login/i }),
+      
+      // 2. テキストベース
+      this.page.getByText(/^ログイン$|^login$/i),
+      
+      // 3. data-testid（次善策）
+      this.page.getByTestId('login'),
+      this.page.getByTestId('login-button'),
+      this.page.getByTestId('login-btn'),
+      
+      // 4. CSSセレクタ（最後の手段）
+      this.page.locator('a[href*="login"]'),
+      this.page.locator('button:has-text("ログイン")'),
+      this.page.locator('a:has-text("ログイン")'),
+      this.page.locator('.login-btn'),
+      this.page.locator('#login-btn')
     ]
 
     let loginButtonFound = false
-    for (const selector of loginSelectors) {
+    for (let i = 0; i < loginStrategies.length; i++) {
+      const strategy = loginStrategies[i]
       try {
-        const element = this.page.locator(selector).first()
-        if (await element.isVisible({ timeout: 5000 })) {
-          console.log(`✅ ログインボタンを発見: ${selector}`)
-          await element.click()
-          loginButtonFound = true
-          break
-        }
+        await expect(strategy).toBeVisible({ timeout: 3000 })
+        console.log(`✅ Found login button with strategy ${i + 1}/${loginStrategies.length}`)
+        await strategy.click()
+        loginButtonFound = true
+        break
       } catch (error) {
         continue
       }
     }
 
     if (!loginButtonFound) {
-      throw new Error('❌ ログインボタンが見つからず、ログインフォームも表示されていません')
+      throw new Error('❌ Login button not found and login form not visible')
     }
 
-    await this.page.waitForLoadState('networkidle')
+    // ログインフォームの表示を待機
+    await this.page.waitForLoadState('domcontentloaded')
   }
 
   /**
-   * ログインフォームへの入力処理
-   * @private
+   * ログインフォームに認証情報を入力
+   * @param credentials { username, password }
+   * @description
+   * - 役割ベースセレクタを優先してログインID・パスワード欄を検出し、値を自動入力する。
+   * - 段階的セレクタ戦略でフォールバック機能を提供。
    */
-  private async fillLoginForm(credentials: LoginCredentials): Promise<void> {
-    console.log('📝 ログイン情報を入力中...')
+  private async fillLoginForm (credentials: LoginCredentials): Promise<void> {
+    console.log('📝 Filling login form...')
 
     try {
-      // ログインID入力フィールド（M3.com専用セレクタ）
-      const loginIdField = this.page.locator('#loginId')
-      await expect(loginIdField).toBeVisible({ timeout: 10000 })
+      // ログインID入力フィールド（段階的戦略）
+      const loginIdStrategies = [
+        // 1. 役割ベースセレクタ（最優先）
+        this.page.getByLabel(/ログインID|メールアドレス|ユーザーID|ID/i),
+        this.page.getByPlaceholder(/ログインID|メールアドレス|ユーザーID|ID/i),
+        this.page.getByRole('textbox', { name: /ログインID|メールアドレス|ユーザーID|ID/i }),
+        
+        // 2. data-testid（次善策）
+        this.page.getByTestId('loginId'),
+        this.page.getByTestId('login-id'),
+        this.page.getByTestId('username'),
+        this.page.getByTestId('email'),
+        
+        // 3. CSSセレクタ（最後の手段）
+        this.page.locator('#loginId'),
+        this.page.locator('input[name="loginId"]'),
+        this.page.locator('input[type="email"]'),
+        this.page.locator('input[type="text"]').first()
+      ]
+
+      let loginIdField = null
+      for (let i = 0; i < loginIdStrategies.length; i++) {
+        try {
+          const field = loginIdStrategies[i]
+          await expect(field).toBeVisible({ timeout: 3000 })
+          loginIdField = field
+          console.log(`✅ Found loginId field with strategy ${i + 1}/${loginIdStrategies.length}`)
+          break
+        } catch {
+          continue
+        }
+      }
+
+      if (!loginIdField) {
+        throw new Error('❌ Login ID field not found with any strategy')
+      }
+
       await loginIdField.fill(credentials.username)
-      console.log('✅ ログインIDの入力が完了しました')
+      console.log('✅ Successfully filled loginId field')
 
-      // パスワード入力フィールド（M3.com専用セレクタ）
-      const passwordField = this.page.locator('#password')
-      await expect(passwordField).toBeVisible({ timeout: 5000 })
+      // パスワード入力フィールド（段階的戦略）
+      const passwordStrategies = [
+        // 1. 役割ベースセレクタ（最優先）
+        this.page.getByLabel(/パスワード|password/i),
+        this.page.getByPlaceholder(/パスワード|password/i),
+        this.page.getByRole('textbox', { name: /パスワード|password/i }),
+        
+        // 2. data-testid（次善策）
+        this.page.getByTestId('password'),
+        this.page.getByTestId('passwd'),
+        this.page.getByTestId('pwd'),
+        
+        // 3. CSSセレクタ（最後の手段）
+        this.page.locator('#password'),
+        this.page.locator('input[name="password"]'),
+        this.page.locator('input[type="password"]')
+      ]
+
+      let passwordField = null
+      for (let i = 0; i < passwordStrategies.length; i++) {
+        try {
+          const field = passwordStrategies[i]
+          await expect(field).toBeVisible({ timeout: 3000 })
+          passwordField = field
+          console.log(`✅ Found password field with strategy ${i + 1}/${passwordStrategies.length}`)
+          break
+        } catch {
+          continue
+        }
+      }
+
+      if (!passwordField) {
+        throw new Error('❌ Password field not found with any strategy')
+      }
+
       await passwordField.fill(credentials.password)
-      console.log('✅ パスワードの入力が完了しました')
+      console.log('✅ Successfully filled password field')
 
+      console.log('✅ Login form filled successfully')
     } catch (error) {
-      throw new Error(`❌ ログインフォームの入力に失敗しました: ${error.message}`)
+      throw new Error(`❌ Login form filling failed: ${error.message}`)
     }
   }
 
   /**
-   * ログイン送信処理とAPIレスポンス監視
-   * @private
+   * ログインを実行し、APIレスポンスを監視
+   * @description
+   * - 役割ベースセレクタでログインボタンを特定し、APIのPOSTレスポンス(303リダイレクト)を待つ。
+   * - 段階的セレクタ戦略で堅牢な要素特定を実現。
    */
-  private async submitLogin(): Promise<void> {
-    console.log('🚀 ログインを実行中...')
+  private async submitLogin (): Promise<void> {
+    console.log('🚀 Submitting login...')
 
-    // ログインAPIレスポンスの監視設定
+    // ログインAPIレスポンスを監視
     const loginResponsePromise = this.page.waitForResponse(response =>
       response.url().includes('/open/login') && response.request().method() === 'POST'
     )
 
+    // 役割ベースセレクタでログインボタンを特定（段階的戦略）
     try {
-      // M3.com専用のログインボタンをクリック
-      const loginButton = this.page.locator('button.pls-button.--primary.opentop__button[type="submit"]')
-      await expect(loginButton).toBeVisible({ timeout: 10000 })
+      const loginButtonStrategies = [
+        // 1. 役割ベースセレクタ（最優先）
+        this.page.getByRole('button', { name: /ログイン|login|送信|submit/i }),
+        this.page.getByRole('button').filter({ hasText: /ログイン|login|送信|submit/i }),
+        
+        // 2. data-testid（次善策）
+        this.page.getByTestId('login-submit'),
+        this.page.getByTestId('submit-button'),
+        this.page.getByTestId('login-button'),
+        
+        // 3. type属性ベース
+        this.page.locator('button[type="submit"]'),
+        this.page.locator('input[type="submit"]'),
+        
+        // 4. CSSセレクタ（最後の手段）
+        this.page.locator('button.pls-button.--primary.opentop__button[type="submit"]'),
+        this.page.locator('.login-submit'),
+        this.page.locator('.submit-btn')
+      ]
+
+      let loginButton = null
+      for (let i = 0; i < loginButtonStrategies.length; i++) {
+        try {
+          const button = loginButtonStrategies[i]
+          await expect(button).toBeVisible({ timeout: 3000 })
+          loginButton = button
+          console.log(`✅ Found login button with strategy ${i + 1}/${loginButtonStrategies.length}`)
+          break
+        } catch {
+          continue
+        }
+      }
+
+      if (!loginButton) {
+        throw new Error('❌ Login submit button not found with any strategy')
+      }
+
       await loginButton.click()
-      console.log('✅ ログインボタンをクリックしました')
+      console.log('✅ Successfully clicked login button')
 
-      // APIレスポンスの確認
+      // ログインAPIのレスポンスを待機
       const loginResponse = await loginResponsePromise
-      const status = loginResponse.status()
-      console.log(`📡 ログインAPIレスポンス: ${status}`)
+      console.log(`📡 Login API response status: ${loginResponse.status()}`)
 
-      if (status === 303) {
-        console.log('✅ ログイン成功（303リダイレクト受信）')
+      if (loginResponse.status() === 303) {
+        console.log('✅ Login successful (303 redirect received)')
         const locationHeader = loginResponse.headers().location
         if (locationHeader) {
-          console.log(`📍 リダイレクト先: ${locationHeader}`)
+          console.log(`📍 Redirect location: ${locationHeader}`)
         }
       } else {
-        throw new Error(`❌ ログインが失敗しました。ステータス: ${status}`)
+        throw new Error(`❌ Login failed with status: ${loginResponse.status()}`)
       }
 
-      // ページ遷移の完了を待機
-      await this.page.waitForLoadState('networkidle')
-
+      // ページの遷移を待機
+      await this.page.waitForLoadState('domcontentloaded')
     } catch (error) {
-      throw new Error(`❌ ログイン送信処理でエラーが発生しました: ${error.message}`)
+      throw new Error(`❌ Login submission failed: ${error.message}`)
     }
   }
 
   /**
-   * M3.comでのログイン成功確認
-   * @private
-   */
-  private async verifyLoginSuccess(): Promise<void> {
-    console.log('🔍 M3.comでのログイン成功状態を確認中...')
-
-    try {
-      // M3.comヘッダーのユーザー名表示を確認
-      const usernameElement = this.page.locator('.atlas-header__username')
-      await expect(usernameElement).toBeVisible({ timeout: 10000 })
-
-      const usernameText = await usernameElement.textContent()
-      if (usernameText && usernameText.trim()) {
-        console.log(`✅ M3.comログイン成功確認。ユーザー名: ${usernameText.trim()}`)
-        return
-      }
-    } catch (error) {
-      throw new Error('❌ M3.comログイン失敗: ユーザー名ヘッダーが見つかりません')
-    }
-
-    throw new Error('❌ M3.comログイン失敗: ユーザー名が空です')
-  }
-
-  /**
-   * サービスサイトでのログイン状態確認
-   * @private
-   */
-  private async verifyServiceLoginState(): Promise<void> {
-    console.log('🔍 サービスサイトでのログイン状態を確認中...')
-
-    // 一般的なログイン状態の指標
-    const loginIndicators = [
-      'header.l-header__cnt.has-user-info', // ヘッダーのログイン状態クラス
-      '.atlas-header__username', // M3共通ユーザー名表示
-      '.point-info .available-point', // ポイント情報の表示
-      '.point-info', // ポイント情報エリア
-      '.search-input' // 検索フォーム（ログイン後にアクセス可能）
-    ]
-
-    let loginConfirmed = false
-    for (const indicator of loginIndicators) {
-      try {
-        await expect(this.page.locator(indicator).first()).toBeVisible({ timeout: 10000 })
-        console.log(`✅ サービスサイトログイン状態確認。指標: ${indicator}`)
-        loginConfirmed = true
-        break
-      } catch (error) {
-        console.log(`⚠️ ログイン指標が見つかりません: ${indicator}`)
-        continue
-      }
-    }
-
-    if (!loginConfirmed) {
-      console.warn('⚠️ 特定の指標でログイン状態を確認できませんでしたが、テストを続行します...')
-      
-      // フォールバック確認：URLとページタイトル
-      try {
-        await expect(this.page).toHaveTitle(/m3\.com|電子書籍/, { timeout: 5000 })
-        console.log('✅ 基本的なサービスサイトアクセスを確認しました')
-      } catch (error) {
-        console.warn('⚠️ 基本的なサービスサイト確認も失敗しました')
-      }
-    }
-  }
-
-  /**
-   * ログアウト処理
-   * 
+   * m3.comでログイン成功を検証
    * @description
-   * - 複数のセレクタでログアウトボタンを検出してクリック
-   * - M3サービス群で共通利用可能なログアウト処理
+   * - 役割ベースセレクタでユーザー名表示要素を特定し、ログイン成功を判定。
+   * - 段階的セレクタ戦略で堅牢な要素特定を実現。
    */
-  async logout(): Promise<void> {
-    console.log('🚪 ログアウト処理を実行中...')
+  private async verifyLoginSuccess (): Promise<void> {
+    console.log('🔍 Verifying login success...')
 
-    const logoutSelectors = [
-      'text=ログアウト',
-      'a[href*="logout"]',
-      'button:has-text("ログアウト")',
-      '.logout-btn',
-      '#logout'
+    // ユーザー名表示要素を段階的戦略で特定
+    const usernameStrategies = [
+      // 1. 役割ベースセレクタ（最優先）
+      this.page.getByRole('banner').getByText(/ユーザー|user/i),
+      this.page.getByRole('navigation').getByText(/ユーザー|user/i),
+      this.page.getByRole('button', { name: /ユーザー|user|ログアウト/i }),
+      
+      // 2. data-testid（次善策）
+      this.page.getByTestId('username'),
+      this.page.getByTestId('user-name'),
+      this.page.getByTestId('logged-in-user'),
+      
+      // 3. 意味的なセレクタ
+      this.page.locator('[aria-label*="ユーザー"]'),
+      this.page.locator('[aria-label*="user"]'),
+      
+      // 4. CSSセレクタ（最後の手段）
+      this.page.locator('.atlas-header__username'),
+      this.page.locator('.username'),
+      this.page.locator('.user-name'),
+      this.page.locator('.logged-in-user')
     ]
 
-    for (const selector of logoutSelectors) {
+    for (let i = 0; i < usernameStrategies.length; i++) {
       try {
-        const element = this.page.locator(selector).first()
-        if (await element.isVisible({ timeout: 5000 })) {
-          await element.click()
-          await this.page.waitForLoadState('networkidle')
-          console.log('✅ ログアウトが完了しました')
+        const usernameElement = usernameStrategies[i]
+        await expect(usernameElement).toBeVisible({ timeout: 3000 })
+        
+        const usernameText = await usernameElement.textContent()
+        if (usernameText && usernameText.trim()) {
+          console.log(`✅ Login success confirmed with username: ${usernameText.trim()} (strategy ${i + 1}/${usernameStrategies.length})`)
           return
         }
       } catch (error) {
@@ -333,115 +400,187 @@ export class AuthHelper {
       }
     }
 
-    console.warn('⚠️ ログアウトボタンが見つかりませんでしたが、処理を続行します...')
-  }
-
-  /**
-   * 現在のログイン状態確認
-   * 
-   * @param timeout タイムアウト時間（ミリ秒）
-   * @returns ログイン状態（true: ログイン済み、false: 未ログイン）
-   * @description
-   * - 現在のページでログイン状態を確認
-   * - テスト前の状態確認や条件分岐に利用
-   */
-  async isLoggedIn(timeout: number = 5000): Promise<boolean> {
+    // 全ての戦略が失敗した場合、フォールバック確認
     try {
-      // M3共通のユーザー名表示要素で確認
-      const usernameElement = this.page.locator('.atlas-header__username')
-      await usernameElement.waitFor({ state: 'visible', timeout })
-      
-      const usernameText = await usernameElement.textContent()
-      return !!(usernameText && usernameText.trim())
-    } catch (error) {
-      // ユーザー名表示が見つからない場合は未ログイン状態と判定
-      return false
-    }
-  }
-
-  /**
-   * ログイン済みユーザー名の取得
-   * 
-   * @param timeout タイムアウト時間（ミリ秒）
-   * @returns ユーザー名（取得できない場合は空文字）
-   * @description
-   * - ログイン状態でのユーザー名を取得
-   * - テストデータの検証や条件分岐に利用
-   */
-  async getLoggedInUsername(timeout: number = 5000): Promise<string> {
-    try {
-      const usernameElement = this.page.locator('.atlas-header__username')
-      await usernameElement.waitFor({ state: 'visible', timeout })
-      
-      const usernameText = await usernameElement.textContent()
-      return usernameText?.trim() || ''
-    } catch (error) {
-      return ''
-    }
-  }
-
-  /**
-   * ログイン状態の詳細確認
-   * 
-   * @param timeout タイムアウト時間（ミリ秒）
-   * @returns ログイン状態の詳細情報
-   * @description
-   * - ログイン状態、ユーザー名、追加情報を一括取得
-   * - テストの初期化処理や状態把握に利用
-   */
-  async getLoginStatus(timeout: number = 5000): Promise<{
-    isLoggedIn: boolean
-    username: string
-    hasUserInfo: boolean
-  }> {
-    const isLoggedIn = await this.isLoggedIn(timeout)
-    const username = await this.getLoggedInUsername(timeout)
-    
-    // ユーザー情報エリアの存在確認
-    let hasUserInfo = false
-    try {
-      await this.page.locator('header.l-header__cnt.has-user-info').waitFor({ 
-        state: 'visible', 
-        timeout: Math.min(timeout, 3000) 
-      })
-      hasUserInfo = true
-    } catch (error) {
-      hasUserInfo = false
-    }
-
-    return {
-      isLoggedIn,
-      username,
-      hasUserInfo
-    }
-  }
-
-  /**
-   * 条件付きログイン処理
-   * 
-   * @param credentials ログイン認証情報
-   * @param targetServiceUrl 遷移先サービスURL
-   * @param forceRelogin 強制再ログインフラグ
-   * @description
-   * - 既にログイン済みの場合はスキップ、未ログインの場合のみログイン実行
-   * - forceReloginがtrueの場合は既存ログイン状態を無視して再ログイン
-   * - テストの効率化と安定性向上に寄与
-   */
-  async conditionalLogin(credentials: LoginCredentials, targetServiceUrl?: string, forceRelogin: boolean = false): Promise<void> {
-    const loginStatus = await this.getLoginStatus()
-    
-    if (!forceRelogin && loginStatus.isLoggedIn) {
-      console.log(`ℹ️ 既にログイン済みです（ユーザー: ${loginStatus.username}）。ログイン処理をスキップします。`)
-      
-      // サービスサイトへの遷移のみ実行
-      if (targetServiceUrl) {
-        await this.navigateToService(targetServiceUrl)
-        await this.verifyServiceLoginState()
-      }
+      // ログアウトボタンの存在でログイン状態を確認
+      const logoutButton = this.page.getByRole('button', { name: /ログアウト|logout/i })
+      await expect(logoutButton).toBeVisible({ timeout: 5000 })
+      console.log('✅ Login success confirmed by logout button presence')
       return
+    } catch (error) {
+      // ユーザー名もログアウトボタンも見つからない場合はログイン失敗
+      throw new Error('❌ Login failed: No login indicators found with any strategy')
+    }
+  }
+
+  /**
+   * ebookサイトでのログイン状態を検証
+   * @description
+   * - 役割ベースセレクタを優先してログイン状態を判定。段階的戦略でフォールバック対応。
+   */
+  private async verifyEbookLoginState(): Promise<void> {
+    console.log('🔍 Verifying ebook site login state...');
+
+    // ebookサイトでのログイン状態の指標（段階的戦略）
+    const loginIndicatorStrategies = [
+      // 1. 役割ベースセレクタ（最優先）
+      this.page.getByRole('banner').locator(':has-text("ポイント")'),
+      this.page.getByRole('navigation').locator(':has-text("ユーザー")'),
+      this.page.getByRole('searchbox'),
+      this.page.getByRole('button', { name: /ログアウト|マイページ/i }),
+      
+      // 2. data-testid（次善策）
+      this.page.getByTestId('user-info'),
+      this.page.getByTestId('point-info'),
+      this.page.getByTestId('search-form'),
+      this.page.getByTestId('user-menu'),
+      
+      // 3. 意味的なセレクタ
+      this.page.locator('[aria-label*="ポイント"]'),
+      this.page.locator('[aria-label*="検索"]'),
+      this.page.locator('[aria-label*="ユーザー"]'),
+      
+      // 4. CSSセレクタ（最後の手段）
+      this.page.locator('header.l-header__cnt.has-user-info'),
+      this.page.locator('.point-info .available-point'),
+      this.page.locator('.point-info'),
+      this.page.locator('.search-input')
+    ];
+
+    let ebookLoginConfirmed = false;
+    for (let i = 0; i < loginIndicatorStrategies.length; i++) {
+      try {
+        const indicator = loginIndicatorStrategies[i]
+        await expect(indicator).toBeVisible({ timeout: 3000 });
+        console.log(`✅ Ebook login state confirmed with strategy ${i + 1}/${loginIndicatorStrategies.length}`);
+        ebookLoginConfirmed = true;
+        break;
+      } catch (error) {
+        continue;
+      }
     }
 
-    console.log('🔄 ログイン状態ではないため、ログイン処理を実行します...')
-    await this.loginToM3AndRedirectToService(credentials, targetServiceUrl)
+    if (!ebookLoginConfirmed) {
+      console.warn('⚠️ Could not confirm ebook login state with specific indicators, trying alternative methods...');
+      
+      // フォールバック1: ログイン関連要素の確認
+      try {
+        const alternativeStrategies = [
+          this.page.getByText(/ポイント|point/i),
+          this.page.getByText(/マイページ|mypage/i),
+          this.page.locator('[placeholder*="検索"]'),
+          this.page.locator('input[type="search"]')
+        ];
+        
+        for (const strategy of alternativeStrategies) {
+          try {
+            await expect(strategy).toBeVisible({ timeout: 2000 });
+            console.log('✅ Ebook login state confirmed with alternative method');
+            ebookLoginConfirmed = true;
+            break;
+          } catch {
+            continue;
+          }
+        }
+      } catch (error) {
+        // 代替方法も失敗
+      }
+      
+      // フォールバック2: URLとページタイトルで基本確認
+      if (!ebookLoginConfirmed) {
+        try {
+          await expect(this.page).toHaveTitle(/m3\.com|電子書籍/, { timeout: 5000 });
+          expect(this.page.url()).toContain('ebook-qa1.m3.com');
+          console.log('✅ Basic ebook site access confirmed');
+        } catch (error) {
+          console.warn('⚠️ Basic ebook site verification also failed, but proceeding with tests...');
+        }
+      }
+    }
+  }
+
+  /**
+   * ログアウト操作
+   * @description
+   * - 役割ベースセレクタを優先してログアウトボタンを検出し、クリックしてログアウトを実行。
+   * - 段階的セレクタ戦略で堅牢な要素特定を実現。
+   */
+  async logout (): Promise<void> {
+    console.log('🚪 Logging out...')
+
+    const logoutStrategies = [
+      // 1. 役割ベースセレクタ（最優先）
+      this.page.getByRole('button', { name: /ログアウト|logout/i }),
+      this.page.getByRole('link', { name: /ログアウト|logout/i }),
+      this.page.getByRole('menuitem', { name: /ログアウト|logout/i }),
+      
+      // 2. テキストベース
+      this.page.getByText(/^ログアウト$|^logout$/i),
+      
+      // 3. data-testid（次善策）
+      this.page.getByTestId('logout'),
+      this.page.getByTestId('logout-button'),
+      this.page.getByTestId('logout-btn'),
+      
+      // 4. CSSセレクタ（最後の手段）
+      this.page.locator('a[href*="logout"]'),
+      this.page.locator('button:has-text("ログアウト")'),
+      this.page.locator('.logout-btn'),
+      this.page.locator('#logout')
+    ]
+
+    for (let i = 0; i < logoutStrategies.length; i++) {
+      try {
+        const strategy = logoutStrategies[i]
+        await expect(strategy).toBeVisible({ timeout: 3000 })
+        await strategy.click()
+        await this.page.waitForLoadState('domcontentloaded')
+        console.log(`✅ Logged out successfully with strategy ${i + 1}/${logoutStrategies.length}`)
+        return
+      } catch (error) {
+        continue
+      }
+    }
+
+    console.warn('⚠️ Logout button not found with any strategy, but proceeding...')
   }
 }
+
+/**
+ * AuthHelperクラス - 役割ベースセレクタ対応ガイド
+ * 
+ * このクラスは全面的に役割ベースセレクタを採用し、CLAUDE.mdの方針に準拠しています。
+ * 
+ * ## 改善されたセレクタ戦略
+ * 
+ * ### 1. ログインフォーム要素
+ * ```typescript
+ * // 従来: this.page.locator('#loginId')
+ * // 改善後: this.page.getByLabel(/ログインID|メールアドレス/i)
+ * //         this.page.getByPlaceholder(/ログインID|メールアドレス/i)
+ * //         フォールバック: this.page.locator('#loginId')
+ * ```
+ * 
+ * ### 2. ボタン要素
+ * ```typescript
+ * // 従来: this.page.locator('button.pls-button.--primary.opentop__button[type="submit"]')
+ * // 改善後: this.page.getByRole('button', { name: /ログイン|login/i })
+ * //         フォールバック: CSSセレクタ
+ * ```
+ * 
+ * ### 3. ログイン状態確認
+ * ```typescript
+ * // 従来: this.page.locator('.atlas-header__username')
+ * // 改善後: this.page.getByRole('banner').getByText(/ユーザー|user/i)
+ * //         this.page.getByRole('button', { name: /ログアウト/i })
+ * //         フォールバック: CSSセレクタ
+ * ```
+ * 
+ * ## 利点
+ * 
+ * - **安定性向上**: UI変更に対して役割ベースセレクタは最も安定
+ * - **可読性向上**: 何を操作しているか明確
+ * - **アクセシビリティ**: スクリーンリーダー等と同じ要素特定方法
+ * - **保守性向上**: セマンティックな意味に基づくため変更に強い
+ * - **フォールバック対応**: 複数戦略で堅牢性を確保
+ */
