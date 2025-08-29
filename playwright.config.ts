@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 export default defineConfig({
-  timeout: 600_000, // 各テストの最大実行時間（10分）
+  timeout: 360_000, // 各テストの最大実行時間（6分）
   expect: {
     timeout: 15000, // expectのデフォルトタイムアウト
   },
