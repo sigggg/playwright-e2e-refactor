@@ -25,7 +25,19 @@ playwright-e2e-refactor/
 
 ## 他プロジェクトへの展開手順
 
-### Phase 0: このリポジトリをclone
+### Phase 0: 開発環境のセットアップ
+
+#### Step 1: VSCodeのインストール（推奨）
+
+**macOS**: Self Serviceから「Visual Studio Code」をインストール
+**Windows**: タスクランチャーから「Visual Studio Code」をインストール
+
+#### Step 2: Playwright拡張機能のインストール
+
+VSCode内で `Ctrl+Shift+X` (Mac: `Cmd+Shift+X`) を押し、「Playwright」を検索して **Playwright Test for VSCode** をインストールしてください。
+また、左下の歯車設定マークから拡張機能を選択し、インストールしても良い。
+
+#### Step 3: このリポジトリをclone
 
 ```bash
 git clone https://rendezvous.m3.com/yuichiro-sueyoshi/playwright-e2e-refactor.git
@@ -42,17 +54,34 @@ npm install @playwright/test dotenv
 npx playwright install
 ```
 
-### Phase 2: Mablテストの出力
+### Phase 2: テストシナリオの作成
 
-リファクタリング開始前に、Mablからテストシナリオを出力してください：
+リファクタリング開始前に、Playwright Test for VSCodeのテストレコード機能を使ってMablテストを追従し、新しいテストシナリオを作成してください：
+
+#### VSCodeでのテストレコード手順
+
+1. **VSCodeの左タブからフラスコマーク**をクリック（Playwright拡張機能）
+
+   ![Playwright拡張機能のタブ](playwright_tab.png)
+
+2. **「Record new」**をクリック
+3. **ブラウザが自動起動**し、レコードモードになります
+4. **Mablテストの操作を手動で追従**してください：
+   - ログイン操作
+   - ページ遷移
+   - フォーム入力
+   - ボタンクリック
+   - 検証したい要素の確認
+5. **操作完了後、レコードを停止**してテストコードが自動生成されます
+
+#### 保存先とファイル名
 
 ```bash
-# testcaseフォルダに移動
-cd testcase
-
-# Mablテストの出力（対象テストのIDを指定）
-mabl tests export --format "playwright" <mabl-test-id>
+# 生成されたテストファイルをtestcaseフォルダに保存
+testcase/{service-name}-recorded.spec.ts
 ```
+
+この方法により、実際のページ構造に基づいた正確なセレクタでテストが作成されます。
 
 ### Phase 3: 作業者が準備すべき情報一覧
 
