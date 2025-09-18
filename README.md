@@ -25,21 +25,26 @@ playwright-e2e-refactor/
 
 ## 他プロジェクトへの展開手順
 
-### Phase 0: 開発環境のセットアップ
+### Phase 0: 開発環境のセットアップ(vscodeとclaude codeの設定)
+
+以下の手順はほぼmacOS想定です。
 
 #### Step 1: VSCodeのインストール（推奨）
 
-**macOS**: Self Serviceから「Visual Studio Code」をインストール
-**Windows**: タスクランチャーから「Visual Studio Code」をインストール
+**macOS**: Self Serviceから「Visual Studio Code」をインストール  
+**Windows**: タスクランチャーから「Visual Studio Code」をインストール  
+
 
 #### Step 2: 環境変数の設定
 
-**以下macのターミナル上で操作します。** まず現在のシェルを確認します：
+**以下macのターミナル上で操作します。** まず現在のシェルを確認します
 
 ```bash
+#/bin/zsh or /bin/bash のどちらかが出力されるはず
 echo $SHELL
 ```
 
+以下1行ずつコピーして実行をオススメします。
 **zshの場合（/bin/zsh）**:
 ```bash
 echo 'export CLAUDE_CODE_USE_VERTEX="true"' >> ~/.zshrc
@@ -72,17 +77,6 @@ gcloud auth login
 gcloud auth application-default login
 ```
 
-#### Step 4: 作業フォルダの作成
-
-作業フォルダを作成してください。
-```bash
-mkdir e2e-work
-cd e2e-work
-
-# 作業フォルダ内(今回はe2e-work)でvscodeを起動する。環境変数の設定が成功していればvscodeが立ち上がるはず
-code .
-```
-
 #### Step 5: Playwright拡張機能のインストール
 
 VSCode内で `Ctrl+Shift+X` (Mac: `Cmd+Shift+X`) を押し、「Playwright」を検索して **Playwright Test for VSCode** をインストールしてください。
@@ -103,6 +97,9 @@ cd playwright-e2e-refactor
 # 依存関係のインストール
 npm install @playwright/test dotenv
 npx playwright install
+
+# 作業フォルダ内(今回はplaywright-e2e-refactorフォルダ)でvscodeを起動する。環境変数の設定が成功していればvscodeが立ち上がるはず
+code .
 ```
 
 ### Phase 2: テストシナリオの作成
