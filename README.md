@@ -32,12 +32,63 @@ playwright-e2e-refactor/
 **macOS**: Self Serviceから「Visual Studio Code」をインストール
 **Windows**: タスクランチャーから「Visual Studio Code」をインストール
 
-#### Step 2: Playwright拡張機能のインストール
+#### Step 2: 環境変数の設定
+
+**以下macのターミナル上で操作します。** まず現在のシェルを確認します：
+
+```bash
+echo $SHELL
+```
+
+**zshの場合（/bin/zsh）**:
+```bash
+echo 'export CLAUDE_CODE_USE_VERTEX="true"' >> ~/.zshrc
+echo 'export CLOUD_ML_REGION="us-east5"' >> ~/.zshrc
+echo 'export ANTHROPIC_VERTEX_PROJECT_ID="m3staff-aiagent"' >> ~/.zshrc
+echo 'export PATH=$PATH:"/Applications/Visual Studio Code.app/Contents/Resources/app/bin"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**bashの場合（/bin/bash）**:
+```bash
+echo 'export CLAUDE_CODE_USE_VERTEX="true"' >> ~/.bashrc
+echo 'export CLOUD_ML_REGION="us-east5"' >> ~/.bashrc
+echo 'export ANTHROPIC_VERTEX_PROJECT_ID="m3staff-aiagent"' >> ~/.bashrc
+echo 'export PATH=$PATH:"/Applications/Visual Studio Code.app/Contents/Resources/app/bin"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+#### Step 3: claude code CLIのインストール
+
+https://docs.google.com/document/d/16HvLcHWPsDWlP3ySS-SD2pLTOZnsby11syXj_K-pDaw/edit?tab=t.0#heading=h.qnuh0trpkw6f
+
+```bash
+# claude code CLIのインストール
+npm install -g @anthropic-ai/claude-code
+
+# google認証
+brew install google-cloud-sdk
+gcloud auth login
+gcloud auth application-default login
+```
+
+#### Step 4: 作業フォルダの作成
+
+作業フォルダを作成してください。
+```bash
+mkdir e2e-work
+cd e2e-work
+
+# 作業フォルダ内(今回はe2e-work)でvscodeを起動する。環境変数の設定が成功していればvscodeが立ち上がるはず
+code .
+```
+
+#### Step 5: Playwright拡張機能のインストール
 
 VSCode内で `Ctrl+Shift+X` (Mac: `Cmd+Shift+X`) を押し、「Playwright」を検索して **Playwright Test for VSCode** をインストールしてください。
 また、左下の歯車設定マークから拡張機能を選択し、インストールしても良い。
 
-#### Step 3: このリポジトリをclone
+#### Step 6: このリポジトリをclone
 
 ```bash
 git clone https://rendezvous.m3.com/yuichiro-sueyoshi/playwright-e2e-refactor.git
