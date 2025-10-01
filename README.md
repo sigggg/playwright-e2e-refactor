@@ -69,6 +69,7 @@ https://docs.google.com/document/d/16HvLcHWPsDWlP3ySS-SD2pLTOZnsby11syXj_K-pDaw/
 
 ```bash
 # claude code CLIのインストール
+brew install node
 npm install -g @anthropic-ai/claude-code
 
 # google認証
@@ -256,3 +257,12 @@ BASE_URL=https://your-service.m3.com
 - **日本語での実装**: コメント・ログ・エラーメッセージは日本語で記述
 
 このリファクタリング基盤を活用することで、新しいサービスのE2Eテスト整備が大幅に効率化されます。
+
+## Tips
+
+### hooks機能を用いて完了通知を受け取る方法
+
+Claude Codeのhooks機能を使用することで、テスト実行やビルド完了時に自動的に通知を受け取ることができます。
+
+詳細な設定方法については以下の記事を参照してください：
+https://zenn.dev/the_exile/articles/claude-code-hooks
