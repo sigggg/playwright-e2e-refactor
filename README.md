@@ -99,12 +99,12 @@ gcloud auth login
 gcloud auth application-default login
 ```
 
-#### Step 5: Playwright拡張機能のインストール
+#### Step 4: Playwright拡張機能のインストール
 
 VSCode内で `Ctrl+Shift+X` (Mac: `Cmd+Shift+X`) を押し、「Playwright」を検索して **Playwright Test for VSCode** をインストールしてください。
 また、左下の歯車設定マークから拡張機能を選択し、インストールしてください。
 
-#### Step 6: このリポジトリをclone
+#### Step 5: このリポジトリをclone
 
 ```bash
 # macOSの場合、Keychainに認証情報を保存
