@@ -19,7 +19,6 @@ playwright-e2e-refactor/
 │   ├── common/                 # ヘッダー・サイドバー・BasePage
 │   ├── config/                 # エラー無視設定
 │   └── utils/                  # テストヘルパー
-├── m3pay-e2e-tests/            # m3payサービス向けテスト
 └── testcase/                   # Mablテスト原本
 ```
 
@@ -37,14 +36,15 @@ playwright-e2e-refactor/
 
 #### Step 2: 環境変数の設定
 
-**以下macのターミナル上で操作します。** まず現在のシェルを確認します
+**以下macのターミナル上で操作してください。** まず現在のシェルを確認してください。
 
 ```bash
 #/bin/zsh or /bin/bash のどちらかが出力されるはず
 echo $SHELL
 ```
 
-以下1行ずつコピーして実行をオススメします。
+以下1行ずつコピーして実行してください。
+
 **zshの場合（/bin/zsh）**:
 ```bash
 echo 'export CLAUDE_CODE_USE_VERTEX="true"' >> ~/.zshrc
@@ -63,6 +63,15 @@ echo 'export PATH=$PATH:"/Applications/Visual Studio Code.app/Contents/Resources
 source ~/.bashrc
 ```
 
+**⚠️ 重要**: ターミナルを再起動した際は、以下のコマンドで環境変数を再読み込みしてください。
+```bash
+# zshの場合
+source ~/.zshrc
+
+# bashの場合
+source ~/.bashrc
+```
+
 #### Step 3: claude code CLIのインストール
 
 https://docs.google.com/document/d/16HvLcHWPsDWlP3ySS-SD2pLTOZnsby11syXj_K-pDaw/edit?tab=t.0#heading=h.qnuh0trpkw6f
@@ -78,12 +87,12 @@ gcloud auth login
 gcloud auth application-default login
 ```
 
-#### Step 5: Playwright拡張機能のインストール
+#### Step 4: Playwright拡張機能のインストール
 
 VSCode内で `Ctrl+Shift+X` (Mac: `Cmd+Shift+X`) を押し、「Playwright」を検索して **Playwright Test for VSCode** をインストールしてください。
-また、左下の歯車設定マークから拡張機能を選択し、インストールしても良い。
+また、左下の歯車設定マークから拡張機能を選択し、インストールしてください。
 
-#### Step 6: このリポジトリをclone
+#### Step 5: このリポジトリをclone
 
 ```bash
 git clone https://rendezvous.m3.com/yuichiro-sueyoshi/playwright-e2e-refactor.git
@@ -158,10 +167,10 @@ testcase/{service-name}-recorded.spec.ts
 ### Phase 4: claude起動
 
 ```bash
-# playwright-e2e-refactorに戻り
+# playwright-e2e-refactorに戻る
 cd ../
 
-# claudeを起動(起動が成功すれば初期設定でdark themeを選択する画面が現れるはず)
+# claudeを起動（起動が成功すれば初期設定でdark themeを選択する画面が現れる）
 claude
 
 # >のチャット待ち受け画面に以下を入力し、.claudeフォルダ配下のclaude.mdをルールとして読み込ませる
@@ -188,9 +197,9 @@ claude
 
 ### Phase 5: プロジェクト固有のカスタマイズ
 
-1. **`playwright.config.ts`** - テスト対象URL、プロジェクト設定を調整
-2. **`tests/data/`** - サービス固有のテストデータ・型定義を作成
-3. **`page/`** - サービス固有のPage Objectを実装
+1. **`playwright.config.ts`** - テスト対象URL、プロジェクト設定を調整してください
+2. **`tests/data/`** - サービス固有のテストデータ・型定義を作成してください
+3. **`page/`** - サービス固有のPage Objectを実装してください
 
 ## 必須共有ファイル
 
@@ -206,11 +215,6 @@ claude
 - **`playwright.config.ts`** - Playwright設定のテンプレート
 - **`package-template.json`** - 依存関係とスクリプト定義
 
-### 3. 参考実装
-- **`m3pay-e2e-tests/`** - 既存の成功例
-  - フォルダ構造の参考
-  - Page Object実装パターン
-  - テストデータ管理方法
 
 ## 必要な追加ファイル（今後整備予定）
 
@@ -232,10 +236,9 @@ BASE_URL=https://your-service.m3.com
 
 ## 使用方法
 
-1. **`.claude/CLAUDE.md`**を熟読し、リファクタリング方針を理解
-2. **shared-e2e-components**を活用して共通処理を効率化
-3. **参考実装**を参照してプロジェクト固有の部分を実装
-4. **段階的リファクタリング**でリスクを最小化
+1. **`.claude/CLAUDE.md`**を熟読し、リファクタリング方針を理解してください
+2. **shared-e2e-components**を活用して共通処理を効率化してください
+3. **段階的リファクタリング**でリスクを最小化してください
 
 ## 主な改善効果
 
