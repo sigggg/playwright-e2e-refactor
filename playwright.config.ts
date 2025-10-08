@@ -11,6 +11,7 @@ export default defineConfig({
   retries: 0, // 必要に応じてリトライ回数を設定
   testDir: './testcase', // テストケースのディレクトリ
   outputDir: 'test-results',
+  testMatch: '**/*.spec.ts', 
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:3000',
@@ -23,6 +24,9 @@ export default defineConfig({
     actionTimeout: 0,
     navigationTimeout: 60_000,
     storageState: process.env.STORAGE_STATE || undefined,
+    proxy: {
+      server: 'http://mrqa1:8888', // デフォルトではQA1に接続
+    },
   },
   projects: [
     {

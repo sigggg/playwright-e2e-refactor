@@ -30,11 +30,23 @@ playwright-e2e-refactor/
 
 #### Step 1: VSCodeのインストール（推奨）
 
-**macOS**: Self Serviceから「Visual Studio Code」をインストール  
-**Windows**: タスクランチャーから「Visual Studio Code」をインストール  
+**macOS**: Self Serviceから「Visual Studio Code」をインストール
+**Windows**: タスクランチャーから「Visual Studio Code」をインストール
 
+#### Step 2: GitLabアクセストークンの設定
 
-#### Step 2: 環境変数の設定
+GitLabからプライベートリポジトリをcloneするために、アクセストークンを設定してください。
+
+- GitLabにログイン: https://rendezvous.m3.com/
+- 右上のユーザーアイコン → **Preferences** → **Access Tokens**
+- **Add new token** をクリック
+- Token name: 任意の名前（例: `playwright-dev-token`）
+- Expiration date: 有効期限を設定（推奨: 90日以内）
+- Select scopes: `read_repository` と `write_repository` の両方にチェック
+- **Create personal access token** をクリック
+- 表示されたトークンをコピー（Step6 で使います。⚠️ このページを閉じると二度と表示されません）
+
+#### Step 3: 環境変数の設定
 
 **以下macのターミナル上で操作してください。** まず現在のシェルを確認してください。
 
@@ -72,7 +84,7 @@ source ~/.zshrc
 source ~/.bashrc
 ```
 
-#### Step 3: claude code CLIのインストール
+#### Step 4: claude code CLIのインストール
 
 https://docs.google.com/document/d/16HvLcHWPsDWlP3ySS-SD2pLTOZnsby11syXj_K-pDaw/edit?tab=t.0#heading=h.qnuh0trpkw6f
 
@@ -87,15 +99,23 @@ gcloud auth login
 gcloud auth application-default login
 ```
 
-#### Step 4: Playwright拡張機能のインストール
+#### Step 5: Playwright拡張機能のインストール
 
 VSCode内で `Ctrl+Shift+X` (Mac: `Cmd+Shift+X`) を押し、「Playwright」を検索して **Playwright Test for VSCode** をインストールしてください。
 また、左下の歯車設定マークから拡張機能を選択し、インストールしてください。
 
-#### Step 5: このリポジトリをclone
+#### Step 6: このリポジトリをclone
 
 ```bash
+# macOSの場合、Keychainに認証情報を保存
+git config --global credential.helper osxkeychain
+
+# リポジトリをclone
 git clone https://rendezvous.m3.com/yuichiro-sueyoshi/playwright-e2e-refactor.git
+
+# 初回clone時にユーザー名とトークンの入力を求められます
+# Username: GitLabのユーザー名
+# Password: Step 2で作成したアクセストークン
 ```
 
 ### Phase 1: 環境セットアップ
@@ -195,11 +215,50 @@ claude
 
 ```
 
-### Phase 5: プロジェクト固有のカスタマイズ
+### Phase 5: 各サービスへの展開
+
+リファクタリングしたテストを各サービスのリポジトリに組み込む際は、以下の手順で進めてください：
+
+#### 1. サービス担当エンジニアとの事前確認
+
+各サービスの担当エンジニアと以下の点を確認してください：
+
+- **開発フロー**: ブランチ戦略、レビュープロセス、マージ方針
+- **GitLab CI/CD設定**: 既存のパイプライン構成、テスト実行タイミング
+- **テスト実行環境**: CI環境のブラウザ設定、並列実行の可否
+- **通知設定**: テスト失敗時の通知先、エスカレーション方法
+- **リリースサイクル**: デプロイ頻度、テスト実行のタイミング
+
+#### 2. プロジェクト固有のカスタマイズ
 
 1. **`playwright.config.ts`** - テスト対象URL、プロジェクト設定を調整してください
 2. **`tests/data/`** - サービス固有のテストデータ・型定義を作成してください
 3. **`page/`** - サービス固有のPage Objectを実装してください
+
+#### 3. GitLab CI/CDへの統合
+
+サービス担当エンジニアと相談の上、適切なタイミングでテストを実行するように設定してください。
+`.gitlab-ci.yml` にPlaywrightテストの実行ステージを追加してください：（以下参考例）
+
+```yaml
+# 例: E2Eテスト実行ステージ
+e2e-test:
+  stage: test
+  image: mcr.microsoft.com/playwright:v1.40.0-focal
+  script:
+    - npm ci
+    - npx playwright install
+    - npx playwright test
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+      - playwright-report/
+    expire_in: 1 week
+  only:
+    - merge_requests
+    - main
+```
 
 ## 必須共有ファイル
 
