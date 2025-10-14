@@ -36,7 +36,7 @@ playwright-e2e-refactor/
 
 ### Phase 0: 開発環境のセットアップ(vscodeとclaude codeの設定)
 
-以下の手順はほぼmacOS想定です。
+以下の手順はmacOS想定です。
 
 #### Step 1: VSCodeのインストール（推奨）
 
@@ -110,10 +110,42 @@ gcloud auth application-default login
 
 #### Step 4: Playwright拡張機能のインストール
 
-VSCode内で `Ctrl+Shift+X` (Mac: `Cmd+Shift+X`) を押し、「Playwright」を検索して **Playwright Test for VSCode** をインストールしてください。
-また、左下の歯車設定マークから拡張機能を選択し、インストールしてください。
+VSCode内で  `Cmd+Shift+X` を押し、「Playwright」を検索して **Playwright Test for VSCode** をインストールしてください。
+または、左下の歯車設定マークから拡張機能を選択し、インストールしてください。
 
-#### Step 5: このリポジトリをclone
+#### Step 5: Playwright MCP サーバーのインストール（オプション）
+
+**HTML自動取得機能を使いたい場合**は、以下をインストールしてください：
+
+```bash
+npm install -g @executeautomation/playwright-mcp-server
+```
+
+Claude Code設定ファイルに追加：
+
+```bash
+# 設定ファイルのパスを確認
+# macOSの場合: ~/.config/claude-code/config.json
+
+# 以下の内容を追加（既存の設定がある場合はマージ）
+{
+  "mcpServers": {
+    "@executeautomation/playwright-mcp-server": {
+      "command": "npx",
+      "args": ["-y", "@executeautomation/playwright-mcp-server"]
+    }
+  }
+}
+```
+
+**機能:**
+- Claudeが自動でブラウザを操作してHTML取得
+- STEP 1のHTML事前取得作業が自動化される
+- スクリーンショット取得やテストレコーディングも可能
+
+**注意:** このステップはオプションです。インストールしない場合は、従来通り手動でHTMLを取得してください。
+
+#### Step 6: このリポジトリをclone
 
 ```bash
 # macOSの場合、Keychainに認証情報を保存
@@ -193,37 +225,92 @@ testcase/{service-name}-recorded.spec.ts
 - [ ] **ブラウザ対応**: 対象ブラウザ、実行環境
 - [ ] **テストアカウント情報**: ユーザーID、パスワード、権限レベル
 
-### Phase 4: claude起動
+### Phase 4: Claude起動とリファクタリング開始
+
+#### Step 1: Claude Codeの起動
 
 ```bash
-# playwright-e2e-refactorに戻る
-cd ../
+# playwright-e2e-refactorフォルダに移動
+cd playwright-e2e-refactor
 
 # claudeを起動（起動が成功すれば初期設定でdark themeを選択する画面が現れる）
 claude
-
-# >のチャット待ち受け画面に以下を入力し、.claudeフォルダ配下のclaude.mdをルールとして読み込ませる
-> 以降のやりとりでは.claudeフォルダ配下のclaude.mdを読み込んで
-
-⏺ Read(.claude/claude.md)
-  ⎿  Read 250 lines (ctrl+r to expand)
-  ⎿  .claude/CLAUDE.md
-
-⏺ claude.mdを読み込みました。今後のやりとりでは、このガイダンスに従ってMablからPlaywrightへのE2Eテストリファクタリング作業をサポートします。
-
-  何か具体的な作業をお手伝いしましょうか？例えば：
-
-  - 元のMablテストの動作確認
-  - 特定のサービスの仕様ファイル作成
-  - リファクタリング作業の開始
-  - 共通基盤の設定
-
-  どの作業から始めたいか教えてください。
-
-  > Step0から始めて
-
 ```
 
+#### Step 2: リファクタリングコマンドの実行
+
+Claude Code起動後、以下のカスタムスラッシュコマンドを使用してリファクタリングを開始します：
+
+```bash
+# >のチャット待ち受け画面で以下を入力
+> /refactor
+```
+
+**`/refactor` コマンドの機能:**
+- `.claude/CLAUDE.md` に記載された体系的なリファクタリングフローを自動で開始
+- STEP 1（現状確認・準備）から STEP 3（本格リファクタリング）まで段階的にガイド
+- 各段階で必要な情報収集、HTML取得依頼、動作確認を対話的に実施
+
+#### Step 3: リファクタリングの進行
+
+`/refactor` コマンド実行後、以下の流れで作業が進みます：
+
+##### **STEP 1: 現状確認・準備**
+Claudeから以下の情報を求められます：
+- 対象サービス名
+- Mablテストファイルのパス
+- 環境セットアップ状況（Playwright、dotenv、.env）
+- システム情報・アカウント情報の収集
+- 実HTML構造の事前取得依頼
+
+**作業者の対応:**
+```bash
+# Claudeの指示に従い、必要な情報を提供
+# 例: HTMLソース取得
+- ブラウザで対象ページにアクセス
+- 右クリック → 「ページのソースを表示」
+- HTML全体をコピーして tmp/[サービス名]_[ページ名].html として保存
+```
+
+##### **STEP 2: Mablテスト簡易修正**
+Claudeが段階的アプローチで元のテストを修正：
+- Phase A: 現状把握（HTML構造確認、最小限の修正)
+- Phase B: 小単位修正（ログイン〜ホーム画面など）
+- Phase C: 段階的拡張（動作確認済み部分から範囲拡大）
+
+**完了条件:** 元のMablテストが最後まで実行成功すること
+
+##### **STEP 3: 本格リファクタリング**
+Page Object Modelパターンを適用した本格的なリファクタリング：
+- Phase 1: Mablシナリオ分析とHTML取得
+- Phase 2: 基盤構築（ドメイン別フォルダ構造）
+- Phase 3: データ層・ユーティリティ構築
+- Phase 4: Helper層設計・実装（⚠️ 段階的廃止予定）
+- Phase 5: Page Object作成
+- Phase 6: テストケース変換
+
+**完了条件:** リファクタリング後のテストが実行成功し、README.mdが作成されること
+
+#### 重要な原則
+
+`/refactor` コマンドは以下の原則に基づいて作業をガイドします：
+
+- **既存テストの忠実な再現**: 新機能追加ではなく変換が目的
+- **役割ベースセレクタの優先使用**: `getByRole()`、`getByLabel()`、`getByPlaceholder()`、`getByText()`を優先
+- **段階的セレクタ戦略**: 役割ベース → data-testid → CSSセレクタのフォールバック対応
+- **URL遷移時のwaitUntil設定**: `waitUntil: 'domcontentloaded'`を明示的に指定（networkidleやloadは避ける）
+- **日本語での実装**: コメント、ログ、エラーメッセージは日本語で記述
+
+#### Tips
+
+**対話的な進行:**
+- 各ステップでClaudeが作業者に確認・質問を行います
+- 問題発生時は立ち止まり、Claudeと解決策を協議してください
+- 不明点があればいつでもClaudeに質問してください
+
+**段階的確認:**
+- 各Phaseの完了時に必ずテスト実行で動作確認を行います
+- 「ここまでは動く」という基準点を明確にしながら進めます
 ### Phase 5: 各サービスへの展開
 
 リファクタリングしたテストを各サービスのリポジトリに組み込む際は、以下の手順で進めてください：
@@ -247,27 +334,7 @@ claude
 #### 3. GitLab CI/CDへの統合
 
 サービス担当エンジニアと相談の上、適切なタイミングでテストを実行するように設定してください。
-`.gitlab-ci.yml` にPlaywrightテストの実行ステージを追加してください：（以下参考例）
-
-```yaml
-# 例: E2Eテスト実行ステージ
-e2e-test:
-  stage: test
-  image: mcr.microsoft.com/playwright:v1.40.0-focal
-  script:
-    - npm ci
-    - npx playwright install
-    - npx playwright test
-  artifacts:
-    when: always
-    paths:
-      - test-results/
-      - playwright-report/
-    expire_in: 1 week
-  only:
-    - merge_requests
-    - main
-```
+各サービスのCI/CD環境に応じて `.gitlab-ci.yml` にPlaywrightテストの実行ステージを追加してください。
 
 ## 必須共有ファイル
 
@@ -342,7 +409,7 @@ https://zenn.dev/the_exile/articles/claude-code-hooks
 
 **問題**: Playwright拡張機能でテストが認識されない
 
-**原因**: VSCodeは起動方法によっては環境変数を読み込んでくれない
+**原因**: VSCodeは起動方法によっては環境変数を読み込んでくれない。
 
 **解決方法**: 改めて`code`コマンドからVSCodeを起動してください
 
@@ -355,13 +422,3 @@ code .
 ```
 
 この方法でVSCodeを起動することで、シェルに設定された環境変数が正しく読み込まれ、Playwright拡張機能がテストを認識できるようになります。
-
-### リポジトリの使い方について
-
-**重要**: このリポジトリはリファクタリング作業のベースとなるテンプレートです。
-
-- リファクタリング作業時に、ファイルを好きなように書き換えて構いません
-- 不要な箇所があれば積極的に削除してください
-- サービス固有の要件に合わせて、自由にカスタマイズしてください
-
-このリポジトリは出発点として提供されているものであり、各サービスの最適な構成に合わせて柔軟に変更することを推奨します。
