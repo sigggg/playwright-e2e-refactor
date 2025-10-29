@@ -595,36 +595,6 @@ export class TestHelpers {
     console.log(`✅ テキスト入力が完了しました: ${text}`)
   }
 
-  /**
-   * ページ内のリンク確認
-   * 
-   * @param maxLinks チェックするリンクの最大数
-   * @returns リンク検証結果
-   * @description
-   * - aタグのリンク先が有効か簡易チェック
-   * - 外部/内部リンクの死活監視やリンク切れ検出に利用
-   */
-  async verifyLinks(maxLinks: number = 10): Promise<{ working: number; broken: number }> {
-    console.log('🔗 ページ内のリンクを確認中...')
-    
-    const links = await this.page.locator('a[href]').all()
-    let working = 0
-    let broken = 0
-
-    for (const link of links.slice(0, maxLinks)) {
-      try {
-        const href = await link.getAttribute('href')
-        if (href && (href.startsWith('http') || href.startsWith('/'))) {
-          working++
-        }
-      } catch (error) {
-        broken++
-      }
-    }
-
-    console.log(`✅ リンク確認完了: ${working}個有効, ${broken}個無効`)
-    return { working, broken }
-  }
 
   /**
    * ページのパフォーマンス情報取得

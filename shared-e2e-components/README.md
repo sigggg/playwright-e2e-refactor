@@ -16,7 +16,6 @@ shared-e2e-components/
 │   ├── basePage.ts                # 基底クラス（高度な機能統合済み）
 │   ├── headerComponent.ts         # M3共通ヘッダー（Atlas対応）
 │   ├── footerComponent.ts         # M3共通フッター（Atlas対応）
-│   └── ebookSidebarComponent.ts   # ⚠️電子書籍専用サイドバー
 ├── utils/                          # ユーティリティ
 │   ├── authHelper.ts              # 認証ヘルパー
 │   └── testHelpers.ts             # テストヘルパー関数
