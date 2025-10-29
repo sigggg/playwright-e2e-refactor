@@ -345,14 +345,114 @@ refactor-agentは以下の原則に基づいて作業を実行します：
 
 #### 2. プロジェクト固有のカスタマイズ
 
-1. **`playwright.config.ts`** - テスト対象URL、プロジェクト設定を調整してください
-2. **`tests/data/`** - サービス固有のテストデータ・型定義を作成してください
-3. **`page/`** - サービス固有のPage Objectを実装してください
+##### **Step 1: サービスリポジトリのclone**
 
-#### 3. GitLab CI/CDへの統合
+```bash
+# 対象サービスのリポジトリをclone
+git clone https://rendezvous.m3.com/[service-name]/[repository-name].git
+cd [repository-name]
+```
 
-サービス担当エンジニアと相談の上、適切なタイミングでテストを実行するように設定してください。
-各サービスのCI/CD環境に応じて `.gitlab-ci.yml` にPlaywrightテストの実行ステージを追加してください。
+##### **Step 2: リファクタリング済みテストフォルダの配置**
+
+リファクタリングが完了した `playwright-e2e-refactor` フォルダをサービスリポジトリにコピーします。
+
+```bash
+# playwright-e2e-refactorフォルダ全体をサービスリポジトリにコピー
+cp -r /path/to/playwright-e2e-refactor /path/to/[repository-name]/e2e-tests
+
+# ⚠️ フォルダ名の変更を推奨
+# 例: playwright-e2e-refactor → [service-name]-e2e-tests
+mv e2e-tests/playwright-e2e-refactor e2e-tests/[service-name]-e2e-tests
+```
+
+**推奨フォルダ名の例:**
+- `medical-service-e2e-tests`
+- `patient-portal-e2e-tests`
+- `admin-dashboard-e2e-tests`
+
+##### **Step 3: 不要ファイル・設定の整理**
+
+コピー後、改めてClaude Codeを立ち上げ、シナリオに関係ないファイル・設定群を整理します。
+
+```bash
+# サービスリポジトリ内のe2e-testsフォルダに移動
+cd e2e-tests/[service-name]-e2e-tests
+
+# Claude Codeを起動
+claude
+```
+
+**Claudeに依頼する整理内容の例:**
+```
+> このサービスのE2Eテストに必要なファイルのみを残し、不要なファイルを削除してください。
+> 特に以下を整理してください：
+> - testcase/内の未使用のMabl元ファイル
+> - tmp/内の一時ファイル
+> - 不要な設定ファイル
+> - 他のサービス用の.claude/services/内のファイル
+```
+
+**整理対象の例:**
+- `testcase/` - リファクタリング完了済みの元のMablテスト
+- `tmp/` - HTML取得作業用の一時ファイル
+- `.claude/services/` - 他サービスの仕様ファイル（対象サービスのみ残す）
+- `node_modules/`, `playwright-report/`, `test-results/` - gitignore対象
+
+##### **Step 4: プロジェクト設定のカスタマイズ**
+
+以下のファイルをサービス固有の設定に調整します：
+
+1. **`playwright.config.ts`**
+   - `baseURL`: サービスのURL
+   - `projects`: 対象ブラウザ・デバイス設定
+   - `workers`: 並列実行数
+
+2. **`tests/data/`**
+   - サービス固有のテストデータ・型定義を作成
+
+3. **`.env`**
+   - サービス固有の環境変数（認証情報、API URL等）
+
+##### **Step 5: GitLab CI設定の導入とCI上の動作確認**
+
+サービス担当エンジニアと相談した `.gitlab-ci.yml` 設定を導入します。
+
+```bash
+# サービスリポジトリのルートに移動
+cd /path/to/[repository-name]
+
+# .gitlab-ci.ymlにPlaywrightテスト実行ステージを追加
+# エンジニアと相談した設定内容を反映
+```
+
+
+**CI上での動作確認:**
+```bash
+# 変更をコミット・プッシュしてCI実行を確認
+git add .
+git commit -m "Add E2E tests with Playwright"
+git push origin feature/add-e2e-tests
+
+# GitLabのパイプライン画面で実行結果を確認
+```
+
+##### **Step 6: MRリクエストの作成とレビュー対応**
+
+CI上でテストが成功したら、通常はMR（Merge Request）を作成する流れになりますが、まずエンジニアに見せる前にQAチーム内でレビューを行なってください。その指摘が修正され次第MRを作成し、各サービス担当エンジニアに見てもらってください。
+
+**MRの説明に含めるべき内容:**
+- リファクタリングの概要
+- 追加したテストケース一覧
+- Mablテストとの対応表（README.md参照）
+- 実行方法・注意事項
+
+**レビュー対応のポイント:**
+- サービス担当エンジニアからのフィードバックを反映
+- CI設定の調整（必要に応じて）
+- テストデータ・環境変数の確認
+- ドキュメント（README.md）の更新
+
 
 ## 必須共有ファイル
 
