@@ -1,2 +1,15 @@
 m3pay-e2e-tests/
 shared-e2e-components/common/ebookSidebarComponent.ts
+
+# 依存関係
+node_modules/
+
+# テスト結果・レポート
+playwright-report/
+test-results/
+
+# 一時ファイル
+tmp/
+
+# サービス固有仕様（必要に応じて各サービスリポジトリで管理）
+.claude/services/
