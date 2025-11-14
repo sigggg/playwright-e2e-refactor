@@ -2,6 +2,19 @@
 
 あなたはPlaywrightテスト作成の専門家です。ユーザーが指定したテストシナリオから、Page Objectとテストケースを生成します。
 
+## 🎯 ハンズオンの目的
+
+**対象者**: 作業者（サービスエンジニア）
+
+**目的**: 自分の担当するサービスのリポジトリに、PlaywrightによるE2Eテストを導入すること
+
+**ゴール**:
+1. サービスリポジトリにPlaywrightテスト環境を構築
+2. URLを渡すだけで自動的にテストケースを生成できるようになる
+3. GitLab CIに組み込み、マージリクエスト時に自動E2Eテスト実行
+
+---
+
 **用途**: このコマンドはハンズオンワークショップやデモンストレーション用に設計されています。
 
 **前提**: このコマンドはPC版（Desktop Chrome）のテスト作成を想定しています。
@@ -26,7 +39,12 @@ mv playwright-e2e-refactor {service-name}-e2e
 
 # 3. ディレクトリに移動
 cd {service-name}-e2e
+
+# 4. このディレクトリでClaude Codeを開く（.mcp.json読み込みのため）
+code .
 ```
+
+**⚠️ 重要**: `.mcp.json`が読み込まれるように、必ずclone後のディレクトリでClaude Codeを開いてください
 
 #### **Claude Codeによる自動クリーンアップ**
 
@@ -68,7 +86,38 @@ cd {service-name}-e2e
    npx playwright install chromium
    ```
 
-5. **認証セットアップの実行**
+5. **Playwright MCP導入（推奨）**
+
+   ユーザーに以下を依頼してください：
+
+   ```bash
+   # MCPサーバーを事前インストール（初回のみ）
+   npx -y @executeautomation/playwright-mcp-server --version
+
+   # 確認：バージョンが表示されればOK
+   ```
+
+   次に、**Claude Codeのウィンドウを再読み込み**してPlaywright MCPを有効化：
+
+   ```
+   方法1: コマンドパレットから再読み込み
+   - Cmd+Shift+P（Mac）/ Ctrl+Shift+P（Windows）
+   - "Developer: Reload Window" を実行
+
+   方法2: Claude Codeを再起動
+   - Claude Codeを完全に終了
+   - Claude Codeを再起動（.mcp.jsonがあるディレクトリで開く）
+   ```
+
+   **動作確認方法**:
+   - 再読み込み/再起動後、MCPサーバーが自動起動（.mcp.json設定により）
+   - Playwright MCP関連のツールが利用可能になっているか確認
+   - `mcp___executeautomation_playwright-mcp-server__playwright_navigate` 等が使えればOK
+
+   **⚠️ MCP未導入の場合の代替手順**:
+   - HTML取得はユーザーに手動で依頼する形になります（Step 2参照）
+
+6. **認証セットアップの実行**
    ```bash
    # .envに正しい認証情報が設定されていることを確認後
    npx playwright test --project=setup
@@ -103,271 +152,274 @@ git push -u origin main
 - [ ] `testcase/.auth/user.json` が生成されている
 - [ ] `playwright.config.ts` が存在する
 - [ ] `.env` ファイルに認証情報が設定されている
+- [ ] `.mcp.json` が存在するディレクトリでClaude Codeを開いている
+- [ ] Claude Codeウィンドウを再読み込み済み（Reload Window実行済み）
+- [ ] Playwright MCPツールが利用可能（推奨）
 - [ ] 不要なサンプルテストが削除されている
 
 **セットアップ完了後、ユーザーに以下を伝える：**
 ```
-✅ セットアップが完了しました！これで /test-create-demo コマンドを使ってテストを作成できます。
+✅ セットアップが完了しました！これで /test-create-demo コマンドを使ってテストを自動生成できます。
 
 次のステップ（ハンズオンワークショップ）：
-1. テスト対象ページのURLを準備
-2. テストシナリオを整理
-3. /test-create-demo コマンドを実行してテスト作成を体験
+1. テスト対象ページのURLを準備（例: https://www.m3.com）
+2. /test-create-demo コマンドを実行
+3. URLを渡すだけで、自動的にテストが生成されます！
 ```
 
-### Step 1: テストシナリオのヒアリング
+---
 
-以下の情報をユーザーに質問して収集してください：
+## 🤖 自動テスト生成フロー
 
-1. **テスト対象ページのURL**
-   - 例: `https://www.m3.com/settings`
+### Step 1: URLの受け取り
 
-2. **テストシナリオ**
-   - 例: "ログイン後にサイドバーの'設定'リンクをクリックして設定ページに遷移し、ユーザー名が表示されることを確認する"
+ユーザーに以下を質問してください：
 
-3. **認証が必要か**
-   - Yes: storageStateを使用（デフォルト）
-   - No: 認証なしでアクセス可能
+**「テスト対象ページのURLを教えてください」**
 
-### Step 2: HTML構造の取得
+- 例: `https://www.m3.com`
+- 例: `https://www.m3.com/settings`
 
-**Playwright MCPが利用可能な場合**:
-1. `mcp___executeautomation_playwright-mcp-server__playwright_navigate` を使用してページにアクセス
-2. `mcp___executeautomation_playwright-mcp-server__playwright_get_visible_html` でHTML取得
+**認証の確認（オプション）**:
+- 基本的に全てのページで認証済み（storageState使用）を前提とします
+- 認証不要ページの場合のみ、ユーザーが明示的に伝えます
+
+### Step 2: HTML構造の自動取得
+
+**Playwright MCPを使用してHTMLを自動取得**:
+
+1. ページにアクセス
+   ```typescript
+   await mcp___executeautomation_playwright-mcp-server__playwright_navigate({
+     url: '{ユーザー指定のURL}',
+     browserType: 'chromium',
+     headless: false,
+     width: 1280,
+     height: 800
+   })
+   ```
+
+2. HTML構造を取得
+   ```typescript
+   await mcp___executeautomation_playwright-mcp-server__playwright_get_visible_html({
+     removeScripts: true,
+     cleanHtml: true,
+     maxLength: 20000
+   })
+   ```
+
 3. `tmp/[ページ名].html` として保存
 
-**Playwright MCP未使用の場合**:
-ユーザーに以下を依頼：
+**⚠️ Playwright MCP未使用の場合**:
+ユーザーに手動でのHTML取得を依頼：
 ```
-「{URL}にアクセスし、ブラウザで右クリック → 'ページのソースを表示' → HTML全体をコピーして tmp/[ページ名].html として保存してください」
+「{URL}にブラウザでアクセスし、右クリック → 'ページのソースを表示' → HTML全体をコピーして tmp/[ページ名].html として保存してください」
 ```
 
-### Step 3: セレクタ調査
+### Step 3: HTML構造の自動分析とテストケース生成
 
-取得したHTMLから以下を特定：
-1. **操作対象要素**: ボタン、リンク、入力フィールド等
-2. **検証対象要素**: 表示テキスト、ステータス表示等
-3. **適切なセレクタ**: 役割ベース → data-testid → CSSセレクタの優先順位
+取得したHTMLを解析し、以下を**自動的に**特定・生成します：
+
+#### **3-1. フォーム要素の検出（入力テスト生成）**
+
+以下の要素を検出し、入力テストを自動生成：
+
+- `<input type="text">`: テキスト入力テスト
+- `<input type="email">`: メールアドレス入力テスト
+- `<input type="password">`: パスワード入力テスト
+- `<textarea>`: テキストエリア入力テスト
+- `<select>`: プルダウン選択テスト
+
+**セレクタ優先順位**:
+1. `getByLabel()` - ラベルテキストで特定
+2. `getByPlaceholder()` - placeholder属性で特定
+3. `getByRole('textbox')` - 役割ベース
+4. CSSセレクタ（最後の手段）
+
+**自動生成されるテストコード例**:
+```typescript
+// メールアドレス入力フィールドが検出された場合
+await page.getByLabel('メールアドレス').fill('test@example.com')
+await expect(page.getByLabel('メールアドレス')).toHaveValue('test@example.com')
+```
+
+#### **3-2. ボタン・リンクの検出（クリック/遷移テスト生成）**
+
+以下の要素を検出し、クリック・遷移テストを自動生成：
+
+- `<button>`: ボタンクリックテスト
+- `<a>`: リンククリック・遷移テスト
+- `<input type="submit">`: 送信ボタンテスト
+
+**セレクタ優先順位**:
+1. `getByRole('button', { name: 'テキスト' })` - 役割ベース
+2. `getByRole('link', { name: 'テキスト' })` - 役割ベース
+3. `getByText('テキスト')` - テキストベース
+
+**自動生成されるテストコード例**:
+```typescript
+// 「設定」リンクが検出された場合
+await page.getByRole('link', { name: '設定' }).click()
+await expect(page).toHaveURL(/settings/)
+```
+
+#### **3-3. 表示要素の検出（アサーション生成）**
+
+以下の要素を検出し、表示確認テストを自動生成：
+
+- `<h1>`, `<h2>`, `<h3>`: 見出し表示確認
+- 重要なテキスト（ユーザー名、ステータス等）
+- 画像（`<img>`）
+- アイコン、バッジ
+
+**自動生成されるテストコード例**:
+```typescript
+// ユーザー名表示が検出された場合
+await expect(page.getByText(/先生|さん/)).toBeVisible()
+
+// ロゴ画像が検出された場合
+await expect(page.getByRole('img', { name: 'm3.com' })).toBeVisible()
+```
+
+#### **3-4. 自動生成されたテストケース一覧の提示**
+
+HTML解析後、ユーザーに以下のような形式でテストケース一覧を提示：
+
+```
+📋 自動生成されるテストケース:
+
+【入力テスト】
+- C001_メールアドレス入力確認
+- C002_パスワード入力確認
+
+【ボタン・リンクテスト】
+- C003_ログインボタンクリック確認
+- C004_設定リンク遷移確認
+
+【表示確認テスト】
+- C005_ヘッダーロゴ表示確認
+- C006_ユーザー名表示確認
+
+これらのテストを生成しますか？ (Yes/No/調整が必要)
+```
+
+ユーザーの承認後、Phase 1に進みます。
 
 ---
 
-## 📝 テストケース生成フロー
+## 📝 Page ObjectとTestの自動生成
 
-### Phase 1: Page Object作成判定
+### Phase 1: Page Objectの自動作成
 
-**既存のPage Objectを使用できるか確認**:
-- `shared-e2e-components/common/` 配下の既存POMをチェック
-- HeaderComponent, SidebarComponent等が使えるか判定
+**Step 3で検出された要素に基づいて、Page Objectを自動生成します。**
 
-**新規Page Object作成が必要な場合**:
-```typescript
-// shared-e2e-components/[domain]/pages/[PageName]Page.ts
-import { Page, Locator } from '@playwright/test'
+#### **既存Page Objectの確認**
+1. `shared-e2e-components/common/` 配下をチェック
+2. HeaderComponent, SidebarComponentなど共通コンポーネントが使えるか確認
 
-/**
- * [ページ名]ページのPage Object
- *
- * @description
- * - [ページの説明]
- * - 役割ベースセレクタを優先使用
- * - Playwright推奨パターン準拠
- */
-export class [PageName]Page {
-  readonly page: Page
+#### **新規Page Objectの自動生成**
 
-  // 主要要素のLocator定義
-  readonly [elementName]: Locator
+- **ファイル配置**: `shared-e2e-components/[domain]/pages/[PageName]Page.ts`
+- **実装方法**: CLAUDE.mdの「Page Object Model」セクションに準拠
+- **必須要素**:
+  - 検出された全要素をreadonly Locatorとして定義
+  - コンストラクタで全Locator初期化
+  - 日本語JSDocコメント
+  - 必要に応じてヘルパーメソッド追加
 
-  constructor(page: Page) {
-    this.page = page
+### Phase 2: テストケースの自動作成
 
-    // 役割ベースセレクタで初期化
-    this.[elementName] = page.getByRole('button', { name: /テキスト/ })
-  }
+**Step 3で生成されたテストケース一覧に基づいて、テストファイルを自動作成します。**
 
-  /**
-   * [操作の説明]
-   */
-  async [actionMethod](): Promise<void> {
-    await this.[elementName].click()
-  }
-}
-```
+- **ファイル配置**: `testcase/[page-name]-auto-generated.spec.ts`
+- **実装方法**: CLAUDE.mdの「テストコード」セクションに準拠
+- **必須要素**:
+  - storageState認証状態の再利用
+  - AAA構造（Arrange/Act/Assert）
+  - 日本語console.logによる進捗出力
+  - test.beforeEach()でページ初期化
+  - waitUntil: 'domcontentloaded'の使用
 
-### Phase 2: テストケース作成
+### Phase 3: 自動生成されたテストの実行確認
 
-```typescript
-// testcase/[test-name].spec.ts
-import { test, expect, devices } from '@playwright/test'
-import { [PageName]Page } from '../shared-e2e-components/[domain]/pages/[PageName]Page'
-
-/**
- * [テスト名]
- *
- * @description
- * - [テストの説明]
- * - storageStateによる認証状態の再利用
- */
-
-// デバイス設定（SP版の場合）
-test.use({
-  ...devices['iPhone 13'],
-})
-
-test.describe('[テストグループ名]', () => {
-  test.beforeEach(async ({ page }) => {
-    // storageStateにより既にログイン済み
-    await page.goto('[URL]', { waitUntil: 'domcontentloaded' })
-  })
-
-  test('C001_[テスト内容]', async ({ page }) => {
-    // Arrange: Page Objectのインスタンス化
-    const targetPage = new [PageName]Page(page)
-
-    // Act: 操作実行
-    console.log('📝 [操作内容]を実行中...')
-    await targetPage.[actionMethod]()
-
-    // Assert: 検証
-    console.log('📝 [検証内容]を確認中...')
-    await expect([検証対象]).toBeVisible()
-    console.log('✅ [検証内容]が確認できました')
-  })
-})
-```
-
-### Phase 3: テスト実行確認
+生成されたテストファイルを実行し、動作を確認します：
 
 ```bash
-# テスト実行
-npx playwright test testcase/[test-name].spec.ts
+# 【推奨】ブラウザ表示モードで実行（ハンズオン用）
+npx playwright test testcase/[page-name]-auto-generated.spec.ts --headed
 
-# ブラウザ表示モードで実行
-npx playwright test testcase/[test-name].spec.ts --headed
+# 全テスト実行
+npx playwright test testcase/[page-name]-auto-generated.spec.ts
+
+# 特定のテストのみ実行
+npx playwright test testcase/[page-name]-auto-generated.spec.ts -g "C001"
 
 # デバッグモード
-npx playwright test testcase/[test-name].spec.ts --debug
+npx playwright test testcase/[page-name]-auto-generated.spec.ts --debug
 ```
 
----
+**テスト実行後の確認事項**:
+- [ ] すべてのテストケースが成功したか
+- [ ] エラーが発生した場合、セレクタが正しいか確認
+- [ ] 必要に応じてPage Objectのセレクタを調整
 
-## ✅ コーディングルール
-
-### セレクタ優先順位
-1. **役割ベースセレクタ（最優先）**:
-   ```typescript
-   page.getByRole('button', { name: 'ログイン' })
-   page.getByRole('link', { name: 'ホーム' })
-   page.getByLabel('メールアドレス')
-   page.getByPlaceholder('例: user@example.com')
-   page.getByText('特定のテキスト')
-   ```
-
-2. **data-testid属性**:
-   ```typescript
-   page.getByTestId('submit-button')
-   ```
-
-3. **CSSセレクタ（最後の手段）**:
-   ```typescript
-   page.locator('#unique-id')
-   page.locator('.specific-class')
-   ```
-
-### 命名規則
-- **Page Objectクラス**: `[PageName]Page` (PascalCase + Page)
-- **テストファイル**: `[test-name].spec.ts` (kebab-case + .spec.ts)
-- **テストケース**: `C[番号]_[テスト内容説明]`
-
-### 必須事項
-- ✅ `readonly` でLocatorを定義
-- ✅ コンストラクタで全Locator初期化
-- ✅ `waitUntil: 'domcontentloaded'` を使用
-- ✅ 日本語でコメント・ログ記述
-- ✅ console.log()で処理進捗を出力
+**ハンズオンワークショップでの活用**:
+1. エンジニアにURLを渡してもらう
+2. `/test-create-demo` コマンド実行
+3. 自動生成されたテストを確認
+4. `--headed` モードで実行し、ブラウザの動きを確認
+5. 必要に応じてテストケースをカスタマイズ
 
 ---
 
-## 🚫 禁止事項
+### Phase 4: GitLab CIへの組み込み
 
-- ❌ `page.waitForTimeout()` の使用（固定待機）
-- ❌ `waitUntil: 'networkidle'` の使用（不安定）
-- ❌ `page.locator()` の過度な使用（役割ベースを優先）
-- ❌ 英語でのコメント記述
-- ❌ テスト内での過度な条件分岐（if/switch）
+**テストが通過したら、各サービスリポジトリのGitLab CIパイプラインに組み込みます。**
 
----
+#### **4-1. .gitlab-ci.ymlファイルの作成**
 
-## 📋 作業チェックリスト
+サービスリポジトリのルートに `.gitlab-ci.yml` を作成（または既存ファイルに追加）
 
-テスト作成完了前に以下を確認してください：
+**必須設定**:
+- **stage**: `test`
+- **image**: `mcr.microsoft.com/playwright:v1.40.0-focal`（Playwright公式イメージ推奨）
+- **before_script**: npm ci、環境変数設定、認証セットアップ
+- **script**: `npx playwright test`
+- **artifacts**: テストレポート保存（playwright-report/, test-results/）
+- **only**: merge_requests, main, develop
 
-- [ ] テストシナリオのヒアリング完了
-- [ ] HTML構造の取得完了
-- [ ] 既存Page Objectの確認完了
-- [ ] Page Object作成（必要な場合）
-- [ ] テストケース作成完了
-- [ ] セレクタが役割ベース優先になっているか
-- [ ] 日本語コメント・ログが記述されているか
-- [ ] テスト実行が成功したか
-- [ ] ユーザーに実行コマンドを提示したか
+#### **4-2. GitLab CI/CD Variables設定**
 
----
+**Settings → CI/CD → Variables** で以下を追加:
+- `E2E_USERNAME`: テストユーザー名（Protected + Masked）
+- `E2E_PASSWORD`: テストパスワード（Protected + Masked）
 
-## 💡 実行例
+⚠️ **重要**: 認証情報はリポジトリにコミットせず、必ずCI/CD Variablesで管理
 
-```bash
-> /test-create
+#### **4-3. オプション設定**
 
-Claude: テストケース作成を支援します。以下の情報を教えてください。
+- **並列実行**: Sharding機能で実行時間短縮（`--shard=$SHARD/4`）
+- **失敗通知**: Slack Webhookでテスト失敗を通知
+- **ブランチ保護**: main/developへのマージ時にE2Eテスト通過を必須化
 
-1. テスト対象ページのURLは何ですか？
-2. どのようなテストシナリオですか？
-3. 認証は必要ですか？（Yes/No）
-4. PC版とSP版のどちらですか？
+#### **✅ GitLab CI組み込み完了チェックリスト**
 
-ユーザー:
-1. https://www.m3.com/settings
-2. サイドバーの'設定'リンクをクリックして設定ページに遷移し、ユーザー名が表示されることを確認
-3. Yes
-4. PC版
+- [ ] `.gitlab-ci.yml` に `e2e-test` ジョブを追加
+- [ ] GitLab CI/CD Variablesに認証情報を設定
+- [ ] テストジョブが正常に実行されることを確認
+- [ ] Artifactsにテストレポートが保存されることを確認
+- [ ] ブランチ保護ルールを設定（main/developへのマージ時にテスト必須）
+- [ ] チームメンバーにCI組み込みを共有
 
-Claude: 了解しました。まずHTML構造を取得します...
-[Playwright MCPでHTML取得]
-
-既存のSidebarComponentが使用できるか確認します...
-[既存POM確認]
-
-新しいSettingsPageを作成します...
-[Page Object作成]
-
-テストケースを作成します...
-[テストケース作成]
-
-テストを実行して動作確認します...
-[テスト実行]
-
-✅ テスト作成が完了しました！
-
-以下のコマンドで実行できます：
-npx playwright test testcase/settings-page.spec.ts
-```
+**これで、マージリクエスト作成時に自動的にE2Eテストが実行されます！**
 
 ---
 
-## 🎯 成果物
+## 📚 参照ドキュメント
 
-テスト作成完了時には以下が生成されます：
+実装の詳細は **CLAUDE.md** を参照してください：
 
-1. **Page Objectファイル**（新規作成の場合）
-   - `shared-e2e-components/[domain]/pages/[PageName]Page.ts`
-
-2. **テストケースファイル**
-   - `testcase/[test-name].spec.ts`
-
-3. **実行コマンド**
-   - ユーザーがすぐに実行できるコマンドを提示
-
----
-
-このコマンドを使用することで、Playwrightベストプラクティスに準拠したテストを効率的に作成できます。
+- **コーディングルール**: Page Object Model、テストコード、セレクタ優先順位
+- **禁止事項**: waitForTimeout、networkidle等のアンチパターン
+- **命名規則**: ファイル名、クラス名、テストケース名
+- **StorageState認証**: 認証状態の再利用方法
