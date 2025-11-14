@@ -13,3 +13,6 @@ tmp/
 
 # サービス固有仕様（必要に応じて各サービスリポジトリで管理）
 .claude/services/
+
+# 認証情報（storageState）
+testcase/.auth/

@@ -1,5 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import * as dotenv from 'dotenv';
+import * as path from 'path';
 
 dotenv.config();
 
@@ -11,8 +12,12 @@ export default defineConfig({
   retries: 0, // 必要に応じてリトライ回数を設定
   testDir: './testcase', // テストケースのディレクトリ
   outputDir: 'test-results',
-  testMatch: '**/*.spec.ts', 
+  testMatch: '**/*.spec.ts',
   reporter: [['list'], ['html', { open: 'never' }]],
+
+  // グローバルセットアップ: 全テスト実行前に1回だけ認証を実行
+  globalSetup: require.resolve('./testcase/auth.setup.ts'),
+
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:3000',
     headless: true,
@@ -23,7 +28,10 @@ export default defineConfig({
     trace: 'on-first-retry',
     actionTimeout: 0,
     navigationTimeout: 60_000,
-    storageState: process.env.STORAGE_STATE || undefined,
+
+    // 認証状態を全テストで共有
+    storageState: path.join(__dirname, 'testcase/.auth/user.json'),
+
     proxy: {
       server: 'http://mrqa1:8888', // デフォルトではQA1に接続
     },

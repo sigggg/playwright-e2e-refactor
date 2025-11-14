@@ -27,12 +27,13 @@ export class M3LoginPage {
 
   /**
    * M3.comでのログイン処理
-   * 
+   *
    * @param credentials ログイン認証情報
    * @description
    * - M3.comサイトでの認証処理のみを実行
    * - サービス固有の遷移処理は含まない
    * - 各サービスのテストで認証基盤として利用
+   * - ログイン後CA広告のスキップ処理を含む
    */
   async performLogin(credentials: LoginCredentials): Promise<void> {
     console.log('🔐 M3ログイン処理を開始中...')
@@ -45,6 +46,9 @@ export class M3LoginPage {
 
     // 3. ログイン成功確認
     await this.verifyM3LoginSuccess()
+
+    // 4. ログイン後CA広告スキップ
+    await this.skipPostLoginCA()
 
     console.log('✅ M3ログイン処理が正常に完了しました')
   }
@@ -227,6 +231,25 @@ export class M3LoginPage {
     throw new Error('❌ M3.comログイン失敗: ユーザー名が空です')
   }
 
+  /**
+   * ログイン後のCA広告をスキップ
+   * @private
+   * @description
+   * - ログイン後に表示される可能性のあるCA広告をスキップ
+   * - 「スキップする」リンクが存在する場合のみクリック
+   * - 存在しない場合はエラーにせず続行
+   */
+  private async skipPostLoginCA(): Promise<void> {
+    try {
+      await this.page
+        .getByRole('link', { name: 'スキップする' })
+        .click({ timeout: 300 })
+      console.log('✅ ログイン後CAをスキップしました')
+    } catch {
+      // スキップする文言リンクが表示されない場合は何もしない
+      console.log('ℹ️ ログイン後CAは表示されませんでした')
+    }
+  }
 
   /**
    * ログアウト処理
