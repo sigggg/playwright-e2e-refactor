@@ -10,7 +10,7 @@ export interface LoginCredentials {
 
 /**
  * M3.comログイン処理の共通コンポーネント
- * 
+ *
  * @description
  * - M3サービス群で共通利用されるログイン処理を提供
  * - 純粋なM3.com認証処理に特化
@@ -19,7 +19,7 @@ export interface LoginCredentials {
  * - 各サービス固有の遷移処理は含まない
  */
 export class M3LoginPage {
-  private page: Page
+  readonly page: Page
 
   constructor(page: Page) {
     this.page = page
@@ -137,7 +137,7 @@ export class M3LoginPage {
       throw new Error('❌ ログインボタンが見つからず、ログインフォームも表示されていません')
     }
 
-    await this.page.waitForLoadState('networkidle')
+    await this.page.waitForLoadState('domcontentloaded')
   }
 
   /**
@@ -200,7 +200,7 @@ export class M3LoginPage {
       }
 
       // ページ遷移の完了を待機
-      await this.page.waitForLoadState('networkidle')
+      await this.page.waitForLoadState('domcontentloaded')
 
     } catch (error) {
       throw new Error(`❌ ログイン送信処理でエラーが発生しました: ${error.message}`)
@@ -281,7 +281,7 @@ export class M3LoginPage {
       console.log('✅ ログアウトボタンをクリックしました')
 
       // 4. ページ遷移の完了を待機
-      await this.page.waitForLoadState('networkidle', { timeout: 30000 })
+      await this.page.waitForLoadState('domcontentloaded', { timeout: 30000 })
       console.log('✅ ログアウト処理が正常に完了しました')
 
     } catch (error) {
@@ -302,7 +302,7 @@ export class M3LoginPage {
           const element = this.page.locator(selector).first()
           if (await element.isVisible({ timeout: 3000 })) {
             await element.click()
-            await this.page.waitForLoadState('networkidle', { timeout: 30000 })
+            await this.page.waitForLoadState('domcontentloaded', { timeout: 30000 })
             console.log(`✅ フォールバックログアウトが成功しました: ${selector}`)
             return
           }
