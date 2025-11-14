@@ -38,7 +38,7 @@ export abstract class BasePage {
 
   /**
    * ページへのナビゲーション
-   * 
+   *
    * @param url 遷移先URL（省略時はクラス定義のURLを使用）
    * @param options ナビゲーションオプション
    */
@@ -50,7 +50,7 @@ export abstract class BasePage {
 
     console.log(`📡 ${targetUrl} にナビゲート中...`)
     await this.page.goto(targetUrl, {
-      waitUntil: options?.waitUntil || 'networkidle',
+      waitUntil: options?.waitUntil || 'domcontentloaded',
       timeout: 60000
     })
     console.log(`✅ ${targetUrl} への遷移が完了しました`)
@@ -58,13 +58,12 @@ export abstract class BasePage {
 
   /**
    * ページの読み込み完了を待機
-   * 
+   *
    * @param timeout タイムアウト時間（ミリ秒）
    */
   async waitForPageLoad(timeout: number = 30000): Promise<void> {
     console.log('⏳ ページの読み込み完了を待機中...')
     try {
-      await this.page.waitForLoadState('networkidle', { timeout })
       await this.page.waitForLoadState('domcontentloaded', { timeout })
       // 安定化のための追加待機
       await this.page.waitForTimeout(1000)

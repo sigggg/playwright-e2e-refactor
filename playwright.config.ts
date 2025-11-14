@@ -19,14 +19,13 @@ export default defineConfig({
   globalSetup: require.resolve('./testcase/auth.setup.ts'),
 
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
-    headless: true,
+    headless: false, // trueにするとヘッドレスモード、falseでブラウザ表示
     viewport: { width: 1280, height: 800 },
     ignoreHTTPSErrors: true,
     video: 'retain-on-failure',
     screenshot: 'only-on-failure',
     trace: 'on-first-retry',
-    actionTimeout: 0,
+    actionTimeout: 30_000, // アクションのデフォルトタイムアウト（30秒）
     navigationTimeout: 60_000,
 
     // 認証状態を全テストで共有

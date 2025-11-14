@@ -474,11 +474,8 @@ CI上でテストが成功したら、通常はMR（Merge Request）を作成す
 ### 1. `.env.example`
 ```bash
 # M3.com認証情報
-LOGIN_ID=your_login_id
+USERNAME=your_username
 PASSWORD=your_password
-
-# テスト対象URL
-BASE_URL=https://your-service.m3.com
 ```
 
 ### 2. `setup-guide.md`
