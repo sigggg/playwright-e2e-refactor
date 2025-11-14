@@ -2,15 +2,34 @@ import { Page, expect, Locator } from '@playwright/test'
 
 /**
  * 全てのPage Objectクラスが継承する基底クラス
- * 
+ *
  * @description
  * - M3サービス群で共通利用される基本機能を提供
  * - ページ操作、要素検証、エラーハンドリングなどの共通処理を集約
  * - 各サービス固有のPage Objectはこのクラスを継承して拡張
  * - 堅牢な待機処理とリトライ機能を内蔵
+ *
+ * ## Playwright推奨パターンに準拠
+ * - このクラスはユーティリティメソッドを提供する基底クラス
+ * - 各Page Objectは固有のLocatorをreadonlyプロパティとしてコンストラクタで初期化
+ * - 共通操作メソッドを提供し、DRY原則を維持
+ *
+ * ## 使用例
+ * ```typescript
+ * export class LoginPage extends BasePage {
+ *   readonly loginButton: Locator;
+ *   readonly emailField: Locator;
+ *
+ *   constructor(page: Page) {
+ *     super(page);
+ *     this.loginButton = page.getByRole('button', { name: 'ログイン' });
+ *     this.emailField = page.getByLabel('メールアドレス');
+ *   }
+ * }
+ * ```
  */
 export abstract class BasePage {
-  protected page: Page
+  protected readonly page: Page
   protected url?: string
 
   constructor(page: Page) {
