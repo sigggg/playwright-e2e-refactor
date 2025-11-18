@@ -16,3 +16,9 @@ tmp/
 
 # 認証情報（storageState）
 testcase/.auth/
+.auth/
+
+# Playwright Test Agents生成ファイル
+specs/
+tests/
+.ai/

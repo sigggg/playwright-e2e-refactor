@@ -115,27 +115,31 @@ VSCode内で  `Cmd+Shift+X` を押し、「Playwright」を検索して **Playwr
 
 #### Step 5: Playwright MCP サーバーのインストール（オプション）
 
-**HTML自動取得機能を使いたい場合**は、以下をインストールしてください：
+**HTML自動取得機能を使いたい場合**は、以下のコマンドでインストールしてください：
 
 ```bash
-npm install -g @executeautomation/playwright-mcp-server
+# Playwright MCPサーバーを追加
+claude mcp add playwright npx @executeautomation/playwright-mcp-server
 ```
 
-Claude Code設定ファイルに追加：
+このコマンドにより、`.mcp.json`ファイルが自動的に作成/更新されます。
+
+**Claude Codeの再起動**
+
+設定を反映させるため、Claude Codeを再起動してください：
 
 ```bash
-# 設定ファイルのパスを確認
-# macOSの場合: ~/.config/claude-code/config.json
+# Claude Codeを終了（Ctrl+C または exit）
+# 再度起動
+claude
+```
 
-# 以下の内容を追加（既存の設定がある場合はマージ）
-{
-  "mcpServers": {
-    "@executeautomation/playwright-mcp-server": {
-      "command": "npx",
-      "args": ["-y", "@executeautomation/playwright-mcp-server"]
-    }
-  }
-}
+**動作確認**
+
+Claude Codeで以下のように指示して、Playwright MCPが利用可能か確認：
+
+```
+Playwright MCPを使ってhttps://example.comにアクセスし、スクリーンショットを取得してください
 ```
 
 **機能:**

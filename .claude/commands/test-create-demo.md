@@ -99,23 +99,11 @@ code .
 
    次に、**Claude Codeのウィンドウを再読み込み**してPlaywright MCPを有効化：
 
-   ```
-   方法1: コマンドパレットから再読み込み
-   - Cmd+Shift+P（Mac）/ Ctrl+Shift+P（Windows）
-   - "Developer: Reload Window" を実行
-
-   方法2: Claude Codeを再起動
-   - Claude Codeを完全に終了
-   - Claude Codeを再起動（.mcp.jsonがあるディレクトリで開く）
-   ```
-
    **動作確認方法**:
    - 再読み込み/再起動後、MCPサーバーが自動起動（.mcp.json設定により）
    - Playwright MCP関連のツールが利用可能になっているか確認
    - `mcp___executeautomation_playwright-mcp-server__playwright_navigate` 等が使えればOK
 
-   **⚠️ MCP未導入の場合の代替手順**:
-   - HTML取得はユーザーに手動で依頼する形になります（Step 2参照）
 
 6. **認証セットアップの実行**
    ```bash
