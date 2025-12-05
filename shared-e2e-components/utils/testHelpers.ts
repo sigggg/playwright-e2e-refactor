@@ -186,8 +186,6 @@ export class TestHelpers {
     try {
       await this.page.waitForLoadState('networkidle', { timeout })
       await this.page.waitForLoadState('domcontentloaded', { timeout })
-      // 追加の安定化待機
-      await this.page.waitForTimeout(1000)
       console.log('✅ ページの読み込みが完了しました')
     } catch (error) {
       console.warn(`⚠️ ページ読み込みタイムアウトが発生しましたが、テストを続行します: ${error.message}`)
@@ -507,7 +505,7 @@ export class TestHelpers {
    */
   async clickWithRetry(locator: Locator, maxRetries: number = 3): Promise<void> {
     console.log(`🖱️ 要素をクリック中: ${locator}`)
-    
+
     for (let i = 0; i < maxRetries; i++) {
       try {
         await locator.waitFor({ state: 'visible', timeout: 5000 })
@@ -519,7 +517,7 @@ export class TestHelpers {
         if (i === maxRetries - 1) {
           throw new Error(`❌ ${maxRetries}回の試行後もクリックに失敗しました: ${locator}`)
         }
-        await this.page.waitForTimeout(1000) // 1秒待機してリトライ
+        // Playwrightの自動待機機能により、次の試行で自動的に待機される
       }
     }
   }
@@ -539,7 +537,7 @@ export class TestHelpers {
     maxRetries: number = 3
   ): Promise<void> {
     console.log(`🖱️ 段階的戦略で要素をクリック中...`)
-    
+
     for (let i = 0; i < maxRetries; i++) {
       try {
         const locator = await this.findWithFallback(strategies, 5000)
@@ -551,7 +549,7 @@ export class TestHelpers {
         if (i === maxRetries - 1) {
           throw new Error(`❌ ${maxRetries}回の試行後もクリックに失敗しました`)
         }
-        await this.page.waitForTimeout(1000) // 1秒待機してリトライ
+        // Playwrightの自動待機機能により、次の試行で自動的に待機される
       }
     }
   }
@@ -691,9 +689,6 @@ export class TestHelpers {
       }
     })
 
-    // 安定化のための待機
-    await this.page.waitForTimeout(2000)
-    
     try {
       await expect(this.page).toHaveScreenshot(`${name}.png`, {
         fullPage: true,
