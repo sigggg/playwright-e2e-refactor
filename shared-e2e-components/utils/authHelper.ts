@@ -62,8 +62,6 @@ export class AuthHelper {
         waitUntil: 'domcontentloaded',
         timeout: 60000
       })
-      // 追加の待機時間
-      await this.page.waitForTimeout(3000)
     } catch (error) {
       console.warn(`⚠️ Initial navigation failed, trying with load event: ${error.message}`)
       await this.page.goto(m3comURL, {
@@ -89,13 +87,8 @@ export class AuthHelper {
     console.log(`🔍 Current URL before navigation: ${this.page.url()}`)
     
     await this.page.goto(ebookURL, { waitUntil: 'domcontentloaded', timeout: 30000 })
-    
+
     console.log(`🔍 URL after navigation: ${this.page.url()}`)
-    
-    // DOMが準備できるまで少し待機（画像404エラーを無視）
-    await this.page.waitForTimeout(2000)
-    
-    console.log(`🔍 Final URL after stabilization: ${this.page.url()}`)
 
     // 7. ebook サイトでのログイン状態を確認
     await this.verifyEbookLoginState()

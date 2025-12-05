@@ -65,8 +65,6 @@ export abstract class BasePage {
     console.log('⏳ ページの読み込み完了を待機中...')
     try {
       await this.page.waitForLoadState('domcontentloaded', { timeout })
-      // 安定化のための追加待機
-      await this.page.waitForTimeout(1000)
       console.log('✅ ページの読み込みが完了しました')
     } catch (error) {
       console.warn(`⚠️ ページ読み込みタイムアウトが発生しましたが、テストを続行します: ${error.message}`)
@@ -93,7 +91,7 @@ export abstract class BasePage {
    */
   async clickWithRetry(locator: Locator, maxRetries: number = 3): Promise<void> {
     console.log(`🖱️ 要素をクリック中: ${locator}`)
-    
+
     for (let i = 0; i < maxRetries; i++) {
       try {
         await locator.waitFor({ state: 'visible', timeout: 5000 })
@@ -105,7 +103,7 @@ export abstract class BasePage {
         if (i === maxRetries - 1) {
           throw new Error(`❌ ${maxRetries}回の試行後もクリックに失敗しました: ${locator}`)
         }
-        await this.page.waitForTimeout(1000) // 1秒待機してリトライ
+        // Playwrightの自動待機機能により、次の試行で自動的に待機される
       }
     }
   }
@@ -266,18 +264,14 @@ export abstract class BasePage {
 
   /**
    * URLの検証
-   * 
+   *
    * @param expectedUrl 期待するURL（部分一致可能）
    */
   async verifyUrl(expectedUrl: string | RegExp): Promise<void> {
     console.log(`🔍 URLを検証中: ${expectedUrl}`)
-    
-    if (typeof expectedUrl === 'string') {
-      expect(this.page.url()).toContain(expectedUrl)
-    } else {
-      expect(this.page.url()).toMatch(expectedUrl)
-    }
-    
+
+    await expect(this.page).toHaveURL(expectedUrl)
+
     console.log(`✅ URLの検証が完了しました: ${expectedUrl}`)
   }
 
