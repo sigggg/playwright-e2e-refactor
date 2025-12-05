@@ -29,7 +29,6 @@ refactor-agentが以下のステップを自律的に実行します：
 ### STEP 3: 本格リファクタリング
 - Page Object Modelパターンの適用
   - **Playwright推奨パターン**: コンストラクタでのreadonly Locator初期化
-  - **段階的セレクタ戦略**: trySelectors()による役割ベース→data-testid→CSSのフォールバック
 - 役割ベースセレクタへの変換
 - StorageState認証パターンの実装
   - **globalSetup**: testcase/auth.setup.tsでの1回のみのログイン処理

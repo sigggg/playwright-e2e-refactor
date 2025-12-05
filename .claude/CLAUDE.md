@@ -41,7 +41,6 @@
 
 - **既存テストの忠実な再現**: 新機能追加ではなく変換が目的
 - **役割ベースセレクタの優先使用**: アクセシビリティを重視した堅牢で保守性の高い要素選択
-- **段階的セレクタ戦略**: 役割ベース → data-testid → CSSセレクタのフォールバック対応
 - **複数サービスエリア対応**: 頑健なアサーションによる慎重な要素特定
 - **URL遷移時のwaitUntil設定**: `page.goto()`や`page.click()`等のURL遷移時は、`waitUntil: 'domcontentloaded'`を明示的に指定する
   - ❌ 避けるべき設定: `networkidle`や`load`は別サービスのエラーや読み込みに引っ張られてタイムアウトする可能性がある
@@ -363,37 +362,6 @@ export class HeaderComponent {
     this.atlasHeader = page.getByRole('heading', { name: 'm3.com', level: 1 })
     this.userName = page.getByRole('button', { name: /先生|さん/ })
   }
-}
-```
-
-**段階的セレクタ戦略の実装**
-
-役割ベースセレクタが使えない場合のフォールバック戦略も、コンストラクタ内で実装する：
-
-```typescript
-constructor(page: Page) {
-  this.page = page
-
-  // フォールバック戦略用のヘルパー関数
-  const trySelectors = (strategies: (() => Locator)[]): Locator => {
-    for (const strategy of strategies) {
-      try {
-        return strategy()
-      } catch {
-        continue
-      }
-    }
-    // 全て失敗した場合は最後の戦略を返す
-    return strategies[strategies.length - 1]()
-  }
-
-  // 優先順位: 役割ベース → data-testid → CSSセレクタ
-  this.userName = trySelectors([
-    () => page.getByRole('button', { name: /先生|さん/ }),
-    () => page.getByTestId('user-name'),
-    () => page.locator('.atlas-header__username'),
-    () => page.locator('.atlas-header__name')
-  ])
 }
 ```
 
