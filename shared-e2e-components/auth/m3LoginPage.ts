@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test'
+import { Page } from '@playwright/test'
 
 /**
  * M3.comログイン認証情報のインターフェース
@@ -23,24 +23,6 @@ export class M3LoginPage {
 
   constructor(page: Page) {
     this.page = page
-  }
-
-  /**
-   * 段階的セレクタ戦略を実行するヘルパー関数
-   * @private
-   * @param strategies セレクタ戦略の配列（優先順位順）
-   * @returns 最初に成功したLocator
-   */
-  private trySelectors(strategies: (() => Locator)[]): Locator {
-    for (const strategy of strategies) {
-      try {
-        return strategy()
-      } catch {
-        continue
-      }
-    }
-    // 全て失敗した場合は最後の戦略を返す
-    return strategies[strategies.length - 1]()
   }
 
   /**
@@ -116,13 +98,7 @@ export class M3LoginPage {
     console.log('🔍 ログインフォームの表示状態を確認中...')
 
     try {
-      // 役割ベースセレクタでログインフォームの存在確認
-      const loginIdField = this.trySelectors([
-        () => this.page.getByLabel(/ログインID|メールアドレス|ユーザーID/i),
-        () => this.page.getByPlaceholder(/ログインID|メールアドレス|ユーザーID/i),
-        () => this.page.getByRole('textbox', { name: /ログインID|メールアドレス|ユーザーID/i }),
-        () => this.page.locator('#loginId') // フォールバック
-      ])
+      const loginIdField = this.page.locator('#loginId')
       await loginIdField.waitFor({ state: 'visible', timeout: 10000 })
       console.log('✅ ログインフォームが既に表示されています')
       return
@@ -130,37 +106,26 @@ export class M3LoginPage {
       console.log('🔍 ログインフォームが非表示、ログインボタンを探索中...')
     }
 
-    // 役割ベースセレクタでログインボタンを探す（段階的戦略）
-    const loginStrategies = [
-      // 1. 役割ベースセレクタ（最優先）
-      () => this.page.getByRole('button', { name: /ログイン|login/i }),
-      () => this.page.getByRole('link', { name: /ログイン|login/i }),
-
-      // 2. テキストベース
-      () => this.page.getByText(/^ログイン$|^login$/i),
-
-      // 3. data-testid（次善策）
-      () => this.page.getByTestId('login'),
-      () => this.page.getByTestId('login-button'),
-      () => this.page.getByTestId('login-btn'),
-
-      // 4. CSSセレクタ（最後の手段）
-      () => this.page.locator('a[href*="login"]'),
-      () => this.page.locator('button:has-text("ログイン")'),
-      () => this.page.locator('a:has-text("ログイン")'),
-      () => this.page.locator('.login-btn'),
-      () => this.page.locator('#login-btn')
+    // ログインボタンをクリックしてフォームを表示
+    const loginSelectors = [
+      'a[href*="login"]',
+      'button:has-text("ログイン")',
+      'a:has-text("ログイン")',
+      '.login-btn',
+      '#login-btn',
+      '[data-testid="login"]'
     ]
 
     let loginButtonFound = false
-    for (let i = 0; i < loginStrategies.length; i++) {
+    for (const selector of loginSelectors) {
       try {
-        const element = loginStrategies[i]()
-        await element.waitFor({ state: 'visible', timeout: 3000 })
-        console.log(`✅ ログインボタンを発見（戦略 ${i + 1}/${loginStrategies.length}）`)
-        await element.click()
-        loginButtonFound = true
-        break
+        const element = this.page.locator(selector).first()
+        if (await element.isVisible({ timeout: 5000 })) {
+          console.log(`✅ ログインボタンを発見: ${selector}`)
+          await element.click()
+          loginButtonFound = true
+          break
+        }
       } catch (error) {
         continue
       }
@@ -181,48 +146,14 @@ export class M3LoginPage {
     console.log('📝 ログイン情報を入力中...')
 
     try {
-      // ログインID入力フィールド（段階的セレクタ戦略）
-      const loginIdField = this.trySelectors([
-        // 1. 役割ベースセレクタ（最優先）
-        () => this.page.getByLabel(/ログインID|メールアドレス|ユーザーID|ID/i),
-        () => this.page.getByPlaceholder(/ログインID|メールアドレス|ユーザーID|ID/i),
-        () => this.page.getByRole('textbox', { name: /ログインID|メールアドレス|ユーザーID|ID/i }),
-
-        // 2. data-testid（次善策）
-        () => this.page.getByTestId('loginId'),
-        () => this.page.getByTestId('login-id'),
-        () => this.page.getByTestId('username'),
-        () => this.page.getByTestId('email'),
-
-        // 3. CSSセレクタ（最後の手段）
-        () => this.page.locator('#loginId'),
-        () => this.page.locator('input[name="loginId"]'),
-        () => this.page.locator('input[type="email"]'),
-        () => this.page.locator('input[type="text"]').first()
-      ])
-
+      // ログインID入力フィールド（M3.com専用セレクタ）
+      const loginIdField = this.page.locator('#loginId')
       await loginIdField.waitFor({ state: 'visible', timeout: 10000 })
       await loginIdField.fill(credentials.username)
       console.log('✅ ログインIDを入力しました')
 
-      // パスワード入力フィールド（段階的セレクタ戦略）
-      const passwordField = this.trySelectors([
-        // 1. 役割ベースセレクタ（最優先）
-        () => this.page.getByLabel(/パスワード|password/i),
-        () => this.page.getByPlaceholder(/パスワード|password/i),
-        () => this.page.getByRole('textbox', { name: /パスワード|password/i }),
-
-        // 2. data-testid（次善策）
-        () => this.page.getByTestId('password'),
-        () => this.page.getByTestId('passwd'),
-        () => this.page.getByTestId('pwd'),
-
-        // 3. CSSセレクタ（最後の手段）
-        () => this.page.locator('#password'),
-        () => this.page.locator('input[name="password"]'),
-        () => this.page.locator('input[type="password"]')
-      ])
-
+      // パスワード入力フィールド（M3.com専用セレクタ）
+      const passwordField = this.page.locator('#password')
       await passwordField.waitFor({ state: 'visible', timeout: 5000 })
       await passwordField.fill(credentials.password)
       console.log('✅ パスワードを入力しました')
@@ -245,26 +176,8 @@ export class M3LoginPage {
     )
 
     try {
-      // ログインボタンを段階的セレクタ戦略で特定
-      const loginButton = this.trySelectors([
-        // 1. 役割ベースセレクタ（最優先）
-        () => this.page.getByRole('button', { name: /ログイン|login|送信|submit/i }),
-        () => this.page.getByRole('button').filter({ hasText: /ログイン|login|送信|submit/i }),
-
-        // 2. data-testid（次善策）
-        () => this.page.getByTestId('login-submit'),
-        () => this.page.getByTestId('submit-button'),
-        () => this.page.getByTestId('login-button'),
-
-        // 3. type属性ベース
-        () => this.page.locator('button[type="submit"]'),
-        () => this.page.locator('input[type="submit"]'),
-
-        // 4. CSSセレクタ（最後の手段）
-        () => this.page.locator('button.pls-button.--primary.opentop__button[type="submit"]'),
-        () => this.page.locator('.login-submit'),
-        () => this.page.locator('.submit-btn')
-      ])
+      // ログインボタンを特定
+      const loginButton = this.page.locator('button.pls-button.--primary.opentop__button[type="submit"]')
 
       await loginButton.waitFor({ state: 'visible', timeout: 10000 })
       await loginButton.click()
@@ -301,28 +214,8 @@ export class M3LoginPage {
     console.log('🔍 M3.comでのログイン成功状態を確認中...')
 
     try {
-      // M3.comヘッダーのユーザー名表示を段階的セレクタ戦略で確認
-      const usernameElement = this.trySelectors([
-        // 1. 役割ベースセレクタ（最優先）
-        () => this.page.getByRole('banner').getByText(/ユーザー|user/i),
-        () => this.page.getByRole('navigation').getByText(/ユーザー|user/i),
-        () => this.page.getByRole('button', { name: /先生|さん/ }),
-
-        // 2. data-testid（次善策）
-        () => this.page.getByTestId('username'),
-        () => this.page.getByTestId('user-name'),
-        () => this.page.getByTestId('logged-in-user'),
-
-        // 3. 意味的なセレクタ
-        () => this.page.locator('[aria-label*="ユーザー"]'),
-        () => this.page.locator('[aria-label*="user"]'),
-
-        // 4. CSSセレクタ（最後の手段）
-        () => this.page.locator('.atlas-header__username'),
-        () => this.page.locator('.username'),
-        () => this.page.locator('.user-name'),
-        () => this.page.locator('.logged-in-user')
-      ])
+      // M3.comヘッダーのユーザー名表示を確認
+      const usernameElement = this.page.locator('.atlas-header__username')
 
       await usernameElement.waitFor({ state: 'visible', timeout: 10000 })
 
