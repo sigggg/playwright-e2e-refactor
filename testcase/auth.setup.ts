@@ -41,7 +41,7 @@ async function globalSetup(config: FullConfig) {
     viewport: { width: 1280, height: 800 }, // playwright.config.tsと同じ設定
     ignoreHTTPSErrors: true,
     proxy: {
-      server: 'http://mrqa1:8888', // playwright.config.tsと同じプロキシ設定
+      server: 'http://mrqa1.office.so-netm3.com:8889', // playwright.config.tsと同じプロキシ設定
     },
   })
   const page = await context.newPage()

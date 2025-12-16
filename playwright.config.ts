@@ -32,7 +32,7 @@ export default defineConfig({
     storageState: path.join(__dirname, 'testcase/.auth/user.json'),
 
     proxy: {
-      server: 'http://mrqa1:8888', // デフォルトではQA1に接続
+      server: 'http://mrqa1.office.so-netm3.com:8889', // デフォルトではQA1に接続
     },
   },
   projects: [
