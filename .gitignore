@@ -22,3 +22,6 @@ testcase/.auth/
 specs/
 tests/
 .ai/
+
+# MCP設定（機密情報を含む）
+.mcp.json
