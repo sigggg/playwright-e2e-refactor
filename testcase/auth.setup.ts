@@ -33,8 +33,17 @@ async function globalSetup(config: FullConfig) {
   console.log('🔐 認証グローバルセットアップを開始します...')
 
   // ブラウザとページを起動
-  const browser = await chromium.launch()
-  const context = await browser.newContext()
+  // 注意: globalSetupではplaywright.config.tsのuse設定が自動適用されないため、明示的に指定
+  const browser = await chromium.launch({
+    headless: false, // playwright.config.tsと同じ設定
+  })
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 800 }, // playwright.config.tsと同じ設定
+    ignoreHTTPSErrors: true,
+    proxy: {
+      server: 'http://mrqa1:8888', // playwright.config.tsと同じプロキシ設定
+    },
+  })
   const page = await context.newPage()
 
   try {

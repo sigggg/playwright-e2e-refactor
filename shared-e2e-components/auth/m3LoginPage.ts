@@ -98,7 +98,7 @@ export class M3LoginPage {
     console.log('🔍 ログインフォームの表示状態を確認中...')
 
     try {
-      const loginIdField = this.page.locator('#loginId')
+      const loginIdField = this.page.getByPlaceholder('ログインID')
       await loginIdField.waitFor({ state: 'visible', timeout: 10000 })
       console.log('✅ ログインフォームが既に表示されています')
       return
@@ -146,14 +146,14 @@ export class M3LoginPage {
     console.log('📝 ログイン情報を入力中...')
 
     try {
-      // ログインID入力フィールド（M3.com専用セレクタ）
-      const loginIdField = this.page.locator('#loginId')
+      // ログインID入力フィールド（placeholder-basedセレクタ）
+      const loginIdField = this.page.getByPlaceholder('ログインID')
       await loginIdField.waitFor({ state: 'visible', timeout: 10000 })
       await loginIdField.fill(credentials.username)
       console.log('✅ ログインIDを入力しました')
 
-      // パスワード入力フィールド（M3.com専用セレクタ）
-      const passwordField = this.page.locator('#password')
+      // パスワード入力フィールド（placeholder-basedセレクタ）
+      const passwordField = this.page.getByPlaceholder('パスワード')
       await passwordField.waitFor({ state: 'visible', timeout: 5000 })
       await passwordField.fill(credentials.password)
       console.log('✅ パスワードを入力しました')
