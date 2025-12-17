@@ -1,6 +1,9 @@
 m3pay-e2e-tests/
 shared-e2e-components/common/ebookSidebarComponent.ts
 
+# OS
+.DS_Store
+
 # 依存関係
 node_modules/
 
