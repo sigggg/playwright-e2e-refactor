@@ -233,7 +233,8 @@ export class M3SPLoginPage {
     console.log('🔍 M3.com SPでのログイン成功状態を確認中...')
 
     try {
-      // SP版のユーザー名表示要素を確認（フッターに表示）
+      // SP版のユーザー名表示要素を確認（フッター内の専用クラス）
+      // 例: "ユニットヨ 先生"
       const usernameElement = this.page.locator('.atlas-sp-userinfo__name')
       await usernameElement.waitFor({ state: 'visible', timeout: 10000 })
 

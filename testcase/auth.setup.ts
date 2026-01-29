@@ -22,6 +22,9 @@ import * as path from 'path'
  *
  * ## storageState保存先
  * testcase/.auth/user.json
+ *
+ * ## 環境変数
+ * - PROXY_SERVER: プロキシサーバーURL（任意、デフォルト: http://mrqa1.office.so-netm3.com:8889）
  */
 
 async function globalSetup(config: FullConfig) {
@@ -29,6 +32,8 @@ async function globalSetup(config: FullConfig) {
   dotenv.config()
 
   const authFile = path.join(__dirname, '.auth/user.json')
+  // プロキシ設定は環境変数から取得（デフォルト値はQA1環境）
+  const proxyServer = process.env.PROXY_SERVER || 'http://mrqa1.office.so-netm3.com:8889'
 
   console.log('🔐 認証グローバルセットアップを開始します...')
 
@@ -41,7 +46,7 @@ async function globalSetup(config: FullConfig) {
     viewport: { width: 1280, height: 800 }, // playwright.config.tsと同じ設定
     ignoreHTTPSErrors: true,
     proxy: {
-      server: 'http://mrqa1.office.so-netm3.com:8889', // playwright.config.tsと同じプロキシ設定
+      server: proxyServer,
     },
   })
   const page = await context.newPage()

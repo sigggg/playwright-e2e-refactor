@@ -1,4 +1,4 @@
-import { Page, expect, Locator } from '@playwright/test'
+import { Page, Locator } from '@playwright/test'
 
 /**
  * 全てのPage Objectクラスが継承する基底クラス
@@ -73,13 +73,16 @@ export abstract class BasePage {
 
   /**
    * 要素の表示を待機
-   * 
+   *
    * @param locator 対象要素のLocator
    * @param timeout タイムアウト時間（ミリ秒）
+   * @description
+   * - Page Object内ではアサーション（expect）を使用しない
+   * - waitForによる状態ベースの待機を使用
    */
   async waitForElement(locator: Locator, timeout: number = 10000): Promise<void> {
     console.log(`⏳ 要素の表示を待機中: ${locator}`)
-    await expect(locator).toBeVisible({ timeout })
+    await locator.waitFor({ state: 'visible', timeout })
     console.log(`✅ 要素が表示されました: ${locator}`)
   }
 
@@ -250,29 +253,32 @@ export abstract class BasePage {
   }
 
   /**
-   * ページタイトルの検証
-   * 
-   * @param expectedTitle 期待するタイトル（部分一致可能な正規表現）
+   * ページタイトルの取得
+   *
+   * @returns ページタイトル
+   * @description
+   * - Page Object内ではアサーション（expect）を使用しない
+   * - タイトルを取得して返却し、テストコード側でアサーションを行う
    */
-  async verifyPageTitle(expectedTitle: string | RegExp): Promise<void> {
-    console.log(`🔍 ページタイトルを検証中: ${expectedTitle}`)
-    
-    await expect(this.page).toHaveTitle(expectedTitle)
-    
-    console.log(`✅ ページタイトルの検証が完了しました: ${expectedTitle}`)
+  async getPageTitle(): Promise<string> {
+    console.log(`🔍 ページタイトルを取得中...`)
+    const title = await this.page.title()
+    console.log(`✅ ページタイトル: ${title}`)
+    return title
   }
 
   /**
-   * URLの検証
+   * 現在のURLの取得
    *
-   * @param expectedUrl 期待するURL（部分一致可能）
+   * @returns 現在のURL
+   * @description
+   * - Page Object内ではアサーション（expect）を使用しない
+   * - URLを取得して返却し、テストコード側でアサーションを行う
    */
-  async verifyUrl(expectedUrl: string | RegExp): Promise<void> {
-    console.log(`🔍 URLを検証中: ${expectedUrl}`)
-
-    await expect(this.page).toHaveURL(expectedUrl)
-
-    console.log(`✅ URLの検証が完了しました: ${expectedUrl}`)
+  getUrl(): string {
+    const url = this.page.url()
+    console.log(`🔍 現在のURL: ${url}`)
+    return url
   }
 
   /**

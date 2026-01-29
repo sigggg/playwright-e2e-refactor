@@ -87,27 +87,29 @@ export class FooterComponent {
     this.ebookApp = page.locator('.atlas-footer__apps .apps__title', { hasText: 'm3.com 電子書籍アプリ' })
 
     // ポリシー・ナビゲーションエリア（Atlas共通）
+    // 役割ベースセレクタを優先使用
     this.policySection = page.locator('.atlas-footer__bottom .atlas-footer__nav')
-    this.termsOfUse = page.locator('.atlas-footer__nav a', { hasText: '利用規約' })
-    this.privacyPolicy = page.locator('.atlas-footer__nav a', { hasText: '個人情報の取り扱いについて' })
-    this.harassmentPolicy = page.locator('.atlas-footer__nav a', { hasText: 'カスタマーハラスメントポリシー' })
-    this.help = page.locator('.atlas-footer__nav a', { hasText: 'ヘルプ' })
-    this.contact = page.locator('.atlas-footer__nav a', { hasText: 'お問い合わせ' })
-    this.aboutM3 = page.locator('.atlas-footer__nav a', { hasText: 'm3.comとは' })
+    this.termsOfUse = page.getByRole('link', { name: '利用規約' })
+    this.privacyPolicy = page.getByRole('link', { name: '個人情報の取り扱いについて' })
+    this.harassmentPolicy = page.getByRole('link', { name: 'カスタマーハラスメントポリシー' })
+    this.help = page.getByRole('link', { name: 'ヘルプ' })
+    this.contact = page.getByRole('link', { name: 'お問い合わせ' })
+    this.aboutM3 = page.getByRole('link', { name: 'm3.comとは' })
     this.copyrightText = page.locator('.atlas-footer__copyright')
     this.copyright = page.locator('footer.atlas-sp-footer small')
     this.allLinks = page.locator('footer.atlas-sp-footer a')
 
     // サービス固有ヘルプメニュー（電子書籍など）
+    // 役割ベースセレクタを優先使用
     this.serviceHelpMenu = page.locator('.book-menu .content')
-    this.howToUse = page.locator('.book-menu .content a:has-text("ご利用方法")')
-    this.aboutPrime = page.locator('.book-menu .content a:has-text("プライム会員について")')
-    this.memberAgreement = page.locator('.book-menu .content a:has-text("m3.com電子書籍会員規約")')
-    this.primeServiceAgreement = page.locator('.book-menu .content a:has-text("プライム会員サービス個別規約")')
-    this.legalNotice = page.locator('.book-menu .content a:has-text("特定商取引に基づく表記")')
-    this.faq = page.locator('.book-menu .content a:has-text("よくある質問")')
-    this.forBeginners = page.locator('.book-menu .content a:has-text("初めての方へ")')
-    this.notice = page.locator('.book-menu .content a:has-text("お知らせ")')
+    this.howToUse = page.getByRole('link', { name: 'ご利用方法' })
+    this.aboutPrime = page.getByRole('link', { name: 'プライム会員について' })
+    this.memberAgreement = page.getByRole('link', { name: 'm3.com電子書籍会員規約' })
+    this.primeServiceAgreement = page.getByRole('link', { name: 'プライム会員サービス個別規約' })
+    this.legalNotice = page.getByRole('link', { name: '特定商取引に基づく表記' })
+    this.faq = page.getByRole('link', { name: 'よくある質問' })
+    this.forBeginners = page.getByRole('link', { name: '初めての方へ' })
+    this.notice = page.getByRole('link', { name: 'お知らせ' })
   }
 
   // 便利メソッド群
