@@ -176,8 +176,8 @@ export class M3LoginPage {
     )
 
     try {
-      // ログインボタンを特定
-      const loginButton = this.page.locator('button.pls-button.--primary.opentop__button[type="submit"]')
+      // ログインボタンを特定（役割ベースセレクタを優先）
+      const loginButton = this.page.getByRole('button', { name: /ログイン/ })
 
       await loginButton.waitFor({ state: 'visible', timeout: 10000 })
       await loginButton.click()
@@ -214,8 +214,9 @@ export class M3LoginPage {
     console.log('🔍 M3.comでのログイン成功状態を確認中...')
 
     try {
-      // M3.comヘッダーのユーザー名表示を確認
-      const usernameElement = this.page.locator('.atlas-header__username')
+      // M3.comヘッダーのユーザー名表示を確認（役割ベースセレクタを優先）
+      // ユーザー名は「〇〇先生」または「〇〇さん」の形式で表示される
+      const usernameElement = this.page.getByText(/先生|さん/).first()
 
       await usernameElement.waitFor({ state: 'visible', timeout: 10000 })
 
@@ -262,20 +263,19 @@ export class M3LoginPage {
     console.log('🚪 ログアウト処理を実行中...')
 
     try {
-      // 1. ユーザー名をクリックしてドロップダウンを開く
-      const userNameButton = this.page.locator('.atlas-header__name')
+      // 1. ユーザー名をクリックしてドロップダウンを開く（役割ベースセレクタを優先）
+      const userNameButton = this.page.getByText(/先生|さん/).first()
       await userNameButton.waitFor({ state: 'visible', timeout: 10000 })
       await userNameButton.click()
       console.log('✅ ユーザー情報ドロップダウンを開きました')
 
       // 2. ドロップダウンが表示されるまで待機
-      const userInfoBox = this.page.locator('.atlas-header__infobox')
+      const userInfoBox = this.page.getByRole('menu')
       await userInfoBox.waitFor({ state: 'visible', timeout: 5000 })
       console.log('✅ ユーザー情報ボックスが表示されました')
 
-      // 3. ログアウトリンクをクリック
-      // header_sample.htmlの構造に基づく正確なセレクタ
-      const logoutLink = this.page.locator('.atlas-header__infobox a[onclick*="atlas-logout"]')
+      // 3. ログアウトリンクをクリック（役割ベースセレクタを優先）
+      const logoutLink = this.page.getByRole('link', { name: 'ログアウト' })
       await logoutLink.waitFor({ state: 'visible', timeout: 5000 })
       await logoutLink.click()
       console.log('✅ ログアウトボタンをクリックしました')

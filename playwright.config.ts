@@ -19,6 +19,7 @@ export default defineConfig({
   globalSetup: require.resolve('./testcase/auth.setup.ts'),
 
   use: {
+    baseURL: process.env.BASE_URL || 'https://www.m3.com',
     headless: false, // trueにするとヘッドレスモード、falseでブラウザ表示
     viewport: { width: 1280, height: 800 },
     ignoreHTTPSErrors: true,

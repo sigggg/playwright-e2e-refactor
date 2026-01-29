@@ -95,9 +95,9 @@ export class HeaderComponentSP {
     this.bottomNavigation = page.locator('nav').last()
 
     // ユーザー名表示要素（SP版）
-    // SP版ではヘッダーに常時表示されず、コンテンツエリアまたはメニュー内に表示される
-    // 例: "myMR君（unit4 auto test 002先生）"
-    this.userName = page.getByText(/先生|さん/).first()
+    // SP版ではフッター内の専用クラスでユーザー名が表示される
+    // 例: "ユニットヨ 先生"
+    this.userName = page.locator('.atlas-sp-userinfo__name')
   }
 
   // 便利メソッド群

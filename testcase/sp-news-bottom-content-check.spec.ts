@@ -4,6 +4,30 @@ import { M3SPLoginPage } from '../shared-e2e-components/auth/M3SPLoginPage'
 
 dotenv.config()
 
+/**
+ * SPニューステスト用の認証情報
+ * 注: auth.setup.tsと同じ環境変数を使用
+ */
+const SP_TEST_USER = {
+  username: process.env.USERNAME || '',
+  password: process.env.PASSWORD || ''
+}
+
+/**
+ * SPサイトのベースURL
+ */
+const SP_BASE_URL = 'https://sp.m3.com'
+
+/**
+ * テスト対象のニュース記事URL
+ * 注: SPサイトは別ドメインのため絶対URLで指定
+ */
+const NEWS_ARTICLES = {
+  general: `${SP_BASE_URL}/news/general/485396`,
+  iryoishin: `${SP_BASE_URL}/news/iryoishin/714599`,
+  kisokoza: `${SP_BASE_URL}/news/kisokoza/303638`,
+} as const
+
 // SPサイト用のデバイスエミュレーション設定
 test.use({
   ...devices['iPhone 13'],
@@ -17,112 +41,50 @@ test.use({
  * - SPサイト（スマートフォン版）での医療ニュース記事下部のおすすめコンテンツ表示確認
  * - 3つのカテゴリ（医療ニュース、医療維新、地域ニュース）の記事で下部コンテンツ確認
  * - 役割ベースセレクタを優先使用
+ * - test.stepによる構造化でレポートの可読性を向上
  */
-test('Unit4_SP_医療ニュース_下部コンテンツ存在チェック', async ({ page }) => {
-  // ==========================================
-  // Arrange: デバイスエミュレーション設定済み（test.use）
-  // ==========================================
+test('C001_SP_医療ニュース_下部コンテンツ存在チェック', async ({ page }) => {
+  /**
+   * 記事下部コンテンツの検証を行うヘルパー関数
+   */
+  const verifyBottomContent = async () => {
+    // 「関連記事」セクションの検証
+    const relatedHeading = page.getByRole('heading', { name: '関連記事' })
+    await expect(relatedHeading).toBeVisible()
 
-  // ==========================================
-  // Act & Assert: M3.com SPサイトログイン
-  // ==========================================
-  console.log('####m3comログイン前トップ遷移')
-  console.log('####m3comログイン')
-  console.log('### m3.comログイン')
+    // 関連記事の1件目のリンク存在確認（役割ベースセレクタで改善）
+    const relatedSection = page.locator('section').filter({ has: page.getByRole('heading', { name: '関連記事' }) })
+    const relatedFirstLink = relatedSection.getByRole('link').first()
+    await expect(relatedFirstLink).toBeVisible()
 
-  // M3 SPログインページクラスを使用
-  const spLoginPage = new M3SPLoginPage(page)
+    // 「臨床おすすめ記事」セクションの検証
+    const clinicalHeading = page.getByRole('heading', { name: '臨床おすすめ記事' })
+    await expect(clinicalHeading).toBeVisible()
 
-  // M3.com SPサイトに遷移してログイン
-  await spLoginPage.navigate()
-  await spLoginPage.login(
-    process.env.SP_USERNAME || 'quiz004',
-    process.env.SP_PASSWORD || 'testtest'
-  )
+    // 臨床おすすめ記事の1件目のリンク存在確認
+    const clinicalSection = page.locator('section').filter({ has: page.getByRole('heading', { name: '臨床おすすめ記事' }) })
+    const clinicalFirstLink = clinicalSection.getByRole('link').first()
+    await expect(clinicalFirstLink).toBeVisible()
+  }
 
-  console.log('m3.comにログイン')
+  await test.step('M3.com SPサイトにログイン', async () => {
+    const spLoginPage = new M3SPLoginPage(page)
+    await spLoginPage.navigate()
+    await spLoginPage.performLogin(SP_TEST_USER)
+  })
 
-  // ==========================================
-  // Act & Assert: 医療ニュース記事下部コンテンツ確認
-  // ==========================================
-  console.log('####各ニュース画面遷移開始')
-  console.log('### 医療ニュース記事（general/485396）下部コンテンツ確認')
+  await test.step('医療ニュース記事の下部コンテンツ確認', async () => {
+    await page.goto(NEWS_ARTICLES.general, { waitUntil: 'domcontentloaded' })
+    await verifyBottomContent()
+  })
 
-  await page.goto('https://www.m3.com/news/general/485396', { waitUntil: 'domcontentloaded' })
+  await test.step('医療維新記事の下部コンテンツ確認', async () => {
+    await page.goto(NEWS_ARTICLES.iryoishin, { waitUntil: 'domcontentloaded' })
+    await verifyBottomContent()
+  })
 
-  // 「関連記事」見出し存在確認
-  const generalRelatedHeading = page.getByRole('heading', { name: '関連記事' })
-  await expect(generalRelatedHeading).toBeVisible({ timeout: 30000 })
-  console.log('✅ 医療ニュース記事「関連記事」見出し表示確認')
-
-  // 関連記事の1件目のリンク存在確認
-  const generalRelatedFirstLink = page.locator('section:has(h1:has-text("関連記事")) ul > li:nth-child(1) > a')
-  await expect(generalRelatedFirstLink).toBeVisible({ timeout: 30000 })
-  console.log('✅ 医療ニュース記事「関連記事」1件目のリンク表示確認')
-
-  // 「臨床おすすめ記事」見出し存在確認
-  const generalClinicalHeading = page.getByRole('heading', { name: '臨床おすすめ記事' })
-  await expect(generalClinicalHeading).toBeVisible({ timeout: 30000 })
-  console.log('✅ 医療ニュース記事「臨床おすすめ記事」見出し表示確認')
-
-  // 臨床おすすめ記事の1件目のリンク存在確認
-  const generalClinicalFirstLink = page.locator('section:has(h1:has-text("臨床おすすめ記事")) ul > li:nth-child(1) > a')
-  await expect(generalClinicalFirstLink).toBeVisible({ timeout: 30000 })
-  console.log('✅ 医療ニュース記事「臨床おすすめ記事」1件目のリンク表示確認')
-
-  // ==========================================
-  // Act & Assert: 医療維新記事下部コンテンツ確認
-  // ==========================================
-  console.log('### 医療維新記事（iryoishin/714599）下部コンテンツ確認')
-
-  await page.goto('https://sp.m3.com/news/iryoishin/714599', { waitUntil: 'domcontentloaded' })
-
-  // 「関連記事」見出し存在確認
-  const iryoishinRelatedHeading = page.getByRole('heading', { name: '関連記事' })
-  await expect(iryoishinRelatedHeading).toBeVisible({ timeout: 30000 })
-  console.log('✅ 医療維新記事「関連記事」見出し表示確認')
-
-  // 関連記事の1件目のリンク存在確認
-  const iryoishinRelatedFirstLink = page.locator('section:has(h1:has-text("関連記事")) ul > li:nth-child(1) > a')
-  await expect(iryoishinRelatedFirstLink).toBeVisible({ timeout: 30000 })
-  console.log('✅ 医療維新記事「関連記事」1件目のリンク表示確認')
-
-  // 「臨床おすすめ記事」見出し存在確認
-  const iryoishinClinicalHeading = page.getByRole('heading', { name: '臨床おすすめ記事' })
-  await expect(iryoishinClinicalHeading).toBeVisible({ timeout: 30000 })
-  console.log('✅ 医療維新記事「臨床おすすめ記事」見出し表示確認')
-
-  // 臨床おすすめ記事の1件目のリンク存在確認
-  const iryoishinClinicalFirstLink = page.locator('section:has(h1:has-text("臨床おすすめ記事")) ul > li:nth-child(1) > a')
-  await expect(iryoishinClinicalFirstLink).toBeVisible({ timeout: 30000 })
-  console.log('✅ 医療維新記事「臨床おすすめ記事」1件目のリンク表示確認')
-
-  // ==========================================
-  // Act & Assert: 地域ニュース記事下部コンテンツ確認
-  // ==========================================
-  console.log('### 地域ニュース記事（kisokoza/303638）下部コンテンツ確認')
-
-  await page.goto('https://www.m3.com/news/kisokoza/303638', { waitUntil: 'domcontentloaded' })
-
-  // 「関連記事」見出し存在確認
-  const kisokozaRelatedHeading = page.getByRole('heading', { name: '関連記事' })
-  await expect(kisokozaRelatedHeading).toBeVisible({ timeout: 30000 })
-  console.log('✅ 地域ニュース記事「関連記事」見出し表示確認')
-
-  // 関連記事の1件目のリンク存在確認
-  const kisokozaRelatedFirstLink = page.locator('section:has(h1:has-text("関連記事")) ul > li:nth-child(1) > a')
-  await expect(kisokozaRelatedFirstLink).toBeVisible({ timeout: 30000 })
-  console.log('✅ 地域ニュース記事「関連記事」1件目のリンク表示確認')
-
-  // 「臨床おすすめ記事」見出し存在確認
-  const kisokozaClinicalHeading = page.getByRole('heading', { name: '臨床おすすめ記事' })
-  await expect(kisokozaClinicalHeading).toBeVisible({ timeout: 30000 })
-  console.log('✅ 地域ニュース記事「臨床おすすめ記事」見出し表示確認')
-
-  // 臨床おすすめ記事の1件目のリンク存在確認
-  const kisokozaClinicalFirstLink = page.locator('section:has(h1:has-text("臨床おすすめ記事")) ul > li:nth-child(1) > a')
-  await expect(kisokozaClinicalFirstLink).toBeVisible({ timeout: 30000 })
-  console.log('✅ 地域ニュース記事「臨床おすすめ記事」1件目のリンク表示確認')
-
-  console.log('####各画面表示チェック終了')
+  await test.step('地域ニュース記事の下部コンテンツ確認', async () => {
+    await page.goto(NEWS_ARTICLES.kisokoza, { waitUntil: 'domcontentloaded' })
+    await verifyBottomContent()
+  })
 })

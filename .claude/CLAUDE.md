@@ -85,6 +85,13 @@ e2e-{service名}/
 → `getByRole`・`getByLabel`・`getByText`を使うことで、**UIの変更に強い堅牢なテスト**が達成される
 
 ```typescript
+// セレクタ優先順位（上から優先）
+// 1. getByTestId() - 最も安定
+// 2. getByRole() / getByLabel() - 役割ベース
+// 3. locator('#id') - ID属性
+// 4. getByText() - テキスト（変更されやすい）
+// 5. CSS/XPath - 最終手段（理由コメント必須）
+
 // ✅ 推奨：役割ベース
 page.getByRole('button', { name: 'ログイン' })
 page.getByLabel('メールアドレス')
@@ -146,6 +153,66 @@ await page.waitForTimeout(3000)
 await expect(page.getByRole('heading', { name: 'ダッシュボード' })).toBeVisible()
 ```
 
+**マジックタイムアウトは使用しない**
+→ playwright.config.tsのデフォルト値に任せることで、**一貫性のある待機時間管理**が達成される
+
+```typescript
+// ❌ ハードコードされたタイムアウト
+await expect(element).toBeVisible({ timeout: 30000 })
+
+// ✅ Configのデフォルト値に任せる
+await expect(element).toBeVisible()
+```
+
+**test.stepでテストを構造化する**
+→ Playwrightレポートで論理的なグループ分けができ、**失敗箇所の特定が容易になる**
+
+```typescript
+test('C001_ログイン成功', async ({ page }) => {
+  await test.step('ログインページにアクセス', async () => {
+    await page.goto('/login')
+  })
+
+  await test.step('認証情報を入力してログイン', async () => {
+    await loginPage.performLogin(credentials)
+  })
+
+  await test.step('ログイン成功を確認', async () => {
+    await expect(page).toHaveURL('/dashboard')
+  })
+})
+```
+
+**テストコード内でconsole.logを使用しない**
+→ Page Object内で既にログ出力しているため、**重複を避けてレポートを簡潔に保つ**
+
+```typescript
+// ❌ テストコード内でログ出力（Page Objectと重複）
+console.log('📝 ログイン状態を確認中...')
+const isLoggedIn = await header.isLoggedIn()
+console.log('✅ 確認完了')
+
+// ✅ test.stepで構造化（ログはPage Object内で出力）
+await test.step('ログイン状態の確認', async () => {
+  const isLoggedIn = await header.isLoggedIn()
+  expect(isLoggedIn).toBe(true)
+})
+```
+
+**URL直書きを避け、baseURLを活用する**
+→ 環境切り替えが容易になり、**設定の一元管理**が達成される
+
+```typescript
+// ❌ URL直書き
+await page.goto('https://www.m3.com/news')
+
+// ✅ 相対パス（baseURL活用）
+await page.goto('/news')
+```
+
+**ファイル末尾に1行の空行を入れる**
+→ POSIX準拠により、**Git差分の明確化とツール互換性**が達成される
+
 ---
 
 ### STEP 3: 品質を担保する
@@ -166,7 +233,12 @@ await expect(page.getByRole('heading', { name: 'ダッシュボード' })).toBeV
 - [ ] 元のMablテストと同じ検証内容を網羅している
 - [ ] Page Objectが適切に分離されている
 - [ ] セレクタが役割ベースになっている
+- [ ] test.stepで構造化されている
+- [ ] テストコード内にconsole.logがない
+- [ ] マジックタイムアウトがない
+- [ ] URL直書きがない
 - [ ] storageStateで認証が再利用されている
+- [ ] ファイル末尾に空行がある
 - [ ] README.mdが作成されている
 
 ---
@@ -178,11 +250,16 @@ await expect(page.getByRole('heading', { name: 'ダッシュボード' })).toBeV
 | getByRole・getByLabel優先 | UIの変更に強い堅牢なテスト |
 | コンストラクタでlocator初期化 | パフォーマンス向上と型安全性 |
 | Page Object内でexpect禁止 | Page Objectの再利用性向上 |
+| test.stepで構造化 | 失敗箇所の特定が容易 |
+| テストコード内でconsole.log禁止 | レポートの簡潔化 |
 | waitUntil: 'domcontentloaded' | 外部サービスエラーによるタイムアウト防止 |
 | waitForTimeout禁止 | テストの安定性向上と実行時間短縮 |
+| マジックタイムアウト禁止 | 一貫性のある待機時間管理 |
+| URL直書き禁止（baseURL活用） | 環境切り替えの容易化 |
 | テストデータを外部化 | データ変更時の修正箇所が明確 |
 | shared-e2e-components活用 | 実装の統一とメンテナンスコスト削減 |
 | storageState活用 | テスト実行時間短縮・認証サーバー負荷軽減 |
+| ファイル末尾に空行 | POSIX準拠・Git差分明確化 |
 | 日本語でコメント・JSDoc記述 | チーム内での理解共有促進 |
 
 ---
