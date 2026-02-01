@@ -35,6 +35,10 @@ export default defineConfig({
     proxy: {
       server: 'http://mrqa1.office.so-netm3.com:8889', // デフォルトではQA1に接続
     },
+    permissions: ['local-network-access'],
+    launchOptions: {
+      args: ['--deny-permission-prompts'],
+    },
   },
   projects: [
     {
