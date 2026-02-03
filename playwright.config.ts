@@ -35,15 +35,28 @@ export default defineConfig({
     proxy: {
       server: 'http://mrqa1.office.so-netm3.com:8889', // デフォルトではQA1に接続
     },
-    permissions: ['local-network-access'],
     launchOptions: {
       args: ['--deny-permission-prompts'],
     },
   },
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'chromium-desktop',
+      testMatch: '**/pc-*.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1000, height: 720 },
+        permissions: ['local-network-access'], // PC版のみ設定
+      },
+    },
+    {
+      name: 'chromium-mobile',
+      testMatch: '**/sp-*.spec.ts',
+      use: {
+        ...devices['iPhone 12'],
+        // iPhone 12のデフォルト設定を使用（User-Agent、viewport等）
+        // permissionsとproxyはbase設定を継承
+      },
     },
   ],
 });

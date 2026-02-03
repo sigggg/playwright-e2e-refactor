@@ -170,9 +170,13 @@ export class M3LoginPage {
   private async submitLoginForm(): Promise<void> {
     console.log('🚀 ログインを実行中...')
 
-    // ログインAPIレスポンスの監視設定
-    const loginResponsePromise = this.page.waitForResponse(response =>
-      response.url().includes('/open/login') && response.request().method() === 'POST'
+    // ログインAPIレスポンスの監視設定（PC版・SP版両対応）
+    const loginResponsePromise = this.page.waitForResponse(
+      response =>
+        response.url().includes('/login') &&
+        response.request().method() === 'POST' &&
+        (response.status() === 200 || response.status() === 303),
+      { timeout: 30000 }
     )
 
     try {
@@ -188,12 +192,15 @@ export class M3LoginPage {
       const status = loginResponse.status()
       console.log(`📡 ログインAPIレスポンス: ${status}`)
 
+      // ステータスコード200または303を成功と見なす
       if (status === 303) {
         console.log('✅ ログイン成功（303リダイレクト受信）')
         const locationHeader = loginResponse.headers().location
         if (locationHeader) {
           console.log(`📍 リダイレクト先: ${locationHeader}`)
         }
+      } else if (status === 200) {
+        console.log('✅ ログイン成功（200 OK受信）')
       } else {
         throw new Error(`❌ ログインが失敗しました。ステータス: ${status}`)
       }
