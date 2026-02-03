@@ -37,6 +37,19 @@ export abstract class BasePage {
   }
 
   /**
+   * SP版かどうか判定
+   *
+   * @returns SP版の場合true、PC版の場合false
+   * @description
+   * - viewportの幅が768px未満の場合をSP版と判定
+   * - PC/SP両対応のページで使用
+   */
+  protected isSP(): boolean {
+    const viewport = this.page.viewportSize()
+    return viewport ? viewport.width < 768 : false
+  }
+
+  /**
    * ページへのナビゲーション
    *
    * @param url 遷移先URL（省略時はクラス定義のURLを使用）
