@@ -420,16 +420,72 @@ claude
 
 ##### **Step 5: GitLab CI設定の導入とCI上の動作確認**
 
-サービス担当エンジニアと相談した `.gitlab-ci.yml` 設定を導入します。
+このリポジトリには、Playwright E2Eテスト用のGitLab CI設定テンプレート（`.gitlab-ci.yml`）が含まれています。
+
+**CI設定の特徴:**
+- **unit4テンプレート活用**: `unit4-playwright-test`テンプレートを継承
+- **自動実行**: MR作成時やコミット時にPC/SP両対応テストを自動実行
+- **QA環境別実行**: qa1～qa10環境に対してマニュアルでテスト実行可能
+- **JUnitレポート生成**: GitLabのテスト結果画面で可視化
+
+**サービスリポジトリへの統合:**
 
 ```bash
-# サービスリポジトリのルートに移動
-cd /path/to/[repository-name]
+# 1. サービスリポジトリのルートに.gitlab-ci.ymlをコピー
+cp .gitlab-ci.yml /path/to/[repository-name]/.gitlab-ci.yml
 
-# .gitlab-ci.ymlにPlaywrightテスト実行ステージを追加
-# エンジニアと相談した設定内容を反映
+# 2. サービス固有の設定に調整
+# - BASE_URL: サービスのベースURL
+# - BACKROOM_BASE_URL: バックルーム管理画面のURL（該当する場合）
+# - E2E_DIR: E2Eテストディレクトリ（デフォルト: "e2e"）
+# - PLAYWRIGHT_WORKERS: 並列実行数（デフォルト: "1" - 順次実行）
+# - PLAYWRIGHT_RETRIES: リトライ回数（デフォルト: "1"）
 ```
 
+**既存の.gitlab-ci.ymlがある場合:**
+
+サービスリポジトリに既存のCI設定がある場合は、以下のように統合します：
+
+```yaml
+# 既存の.gitlab-ci.ymlに以下を追加
+
+include:
+  - project: unit4/ci-templates
+    ref: master
+    file:
+      - unit4-playwright-test/unit4-playwright-test.yml
+
+# stagesにintegrationを追加
+stages:
+  - test
+  - integration  # 追加
+
+# Playwright E2Eテストジョブを追加
+playwright:test:
+  rules: *rules-default
+  stage: test
+  interruptible: true
+  extends: .unit4-playwright-test
+  variables:
+    E2E_DIR: "e2e"
+    BASE_URL: "https://your-service.m3.com"
+    PLAYWRIGHT_WORKERS: "1"
+    PLAYWRIGHT_RETRIES: "1"
+  before_script:
+    - cd "${E2E_DIR}"
+    - npm ci
+    - npx playwright install --with-deps chromium
+  script:
+    - npx playwright test --project=chromium-desktop --project=chromium-mobile
+  artifacts:
+    when: always
+    paths:
+      - ${E2E_DIR}/playwright-report/
+      - ${E2E_DIR}/test-results/
+    reports:
+      junit: ${E2E_DIR}/test-results/junit.xml
+    expire_in: '1 week'
+```
 
 **CI上での動作確認:**
 ```bash
