@@ -40,7 +40,7 @@ async function globalSetup(config: FullConfig) {
   // ブラウザとページを起動
   // 注意: globalSetupではplaywright.config.tsのuse設定が自動適用されないため、明示的に指定
   const browser = await chromium.launch({
-    headless: false, // playwright.config.tsと同じ設定
+    headless: true, // 認証処理はヘッドレスで実行（効率化のため）
   })
   const context = await browser.newContext({
     viewport: { width: 1280, height: 800 }, // playwright.config.tsと同じ設定
