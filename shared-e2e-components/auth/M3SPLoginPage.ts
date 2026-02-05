@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test'
+import { BasePage } from '../common/basePage'
 
 /**
  * M3.com SPログイン認証情報のインターフェース
@@ -17,14 +18,14 @@ export interface SPLoginCredentials {
  * - APIレスポンス監視による確実なログイン成功判定
  * - ユーザー名表示確認によるログイン状態の検証
  * - m3LoginPage.tsと統一された設計パターン
+ * - BasePage継承により共通機能を活用
+ * - URL: 環境変数 SP_BASE_URL から取得（デフォルト: https://sp.m3.com/）
  */
-export class M3SPLoginPage {
-  readonly page: Page
-  readonly url: string
-
+export class M3SPLoginPage extends BasePage {
   constructor(page: Page) {
-    this.page = page
-    this.url = 'https://sp.m3.com/'
+    super(page)
+    // 環境変数からSP URLを取得（環境切り替え対応）
+    this.url = process.env.SP_BASE_URL || 'https://sp.m3.com/'
   }
 
   /**
@@ -32,13 +33,11 @@ export class M3SPLoginPage {
    *
    * @description
    * - SP版のM3.comトップページへ遷移
+   * - BasePageのnavigate()メソッドを活用
    */
   async navigate(): Promise<void> {
     console.log(`📡 M3.com SPページにアクセス中: ${this.url}`)
-    await this.page.goto(this.url, {
-      waitUntil: 'domcontentloaded',
-      timeout: 60000
-    })
+    await super.navigate()
     console.log('✅ M3.com SPページへのアクセスが完了しました')
   }
 
@@ -86,14 +85,12 @@ export class M3SPLoginPage {
 
     try {
       await this.page.goto(this.url, {
-        waitUntil: 'domcontentloaded',
-        timeout: 60000
+        waitUntil: 'domcontentloaded'
       })
     } catch (error) {
       console.warn(`⚠️ 初期アクセスが失敗、loadイベントで再試行: ${error.message}`)
       await this.page.goto(this.url, {
-        waitUntil: 'load',
-        timeout: 60000
+        waitUntil: 'load'
       })
     }
   }
@@ -131,7 +128,7 @@ export class M3SPLoginPage {
     // ログイン済みかどうかを確認（メニューボタンの存在で判定）
     try {
       const menuButton = this.page.getByRole('button', { name: 'メニュー' })
-      const isVisible = await menuButton.isVisible({ timeout: 3000 })
+      const isVisible = await menuButton.isVisible()
       if (isVisible) {
         return false // 既にログイン済み
       }
@@ -141,7 +138,7 @@ export class M3SPLoginPage {
 
     // ログインフォームが表示されているか確認
     const loginIdField = this.page.getByRole('textbox').first()
-    const loginFormExists = await loginIdField.isVisible({ timeout: 3000 }).catch(() => false)
+    const loginFormExists = await loginIdField.isVisible().catch(() => false)
 
     if (!loginFormExists) {
       console.log('⚠️ ログインフォームが見つかりません。既にログイン済みの可能性があります。')
@@ -162,7 +159,7 @@ export class M3SPLoginPage {
     try {
       // ログインID入力（最初のテキストボックス）
       const loginIdField = this.page.getByRole('textbox').first()
-      await loginIdField.waitFor({ state: 'visible', timeout: 10000 })
+      await loginIdField.waitFor({ state: 'visible' })
       await loginIdField.fill(credentials.username)
       console.log(`✅ ログインIDを入力しました: ${credentials.username}`)
 
@@ -185,8 +182,7 @@ export class M3SPLoginPage {
 
     // ログインAPIレスポンスの監視設定
     const loginResponsePromise = this.page.waitForResponse(
-      response => response.url().includes('/login') && response.request().method() === 'POST',
-      { timeout: 30000 }
+      response => response.url().includes('/login') && response.request().method() === 'POST'
     )
 
     try {
@@ -214,7 +210,7 @@ export class M3SPLoginPage {
       }
 
       // ページ遷移の完了を待機
-      await this.page.waitForLoadState('domcontentloaded', { timeout: 30000 })
+      await this.page.waitForLoadState('domcontentloaded')
 
     } catch (error) {
       throw new Error(`❌ ログイン送信処理でエラーが発生しました: ${error.message}`)
@@ -236,7 +232,7 @@ export class M3SPLoginPage {
       // SP版のユーザー名表示要素を確認（フッター内の専用クラス）
       // 例: "ユニットヨ 先生"
       const usernameElement = this.page.locator('.atlas-sp-userinfo__name')
-      await usernameElement.waitFor({ state: 'visible', timeout: 10000 })
+      await usernameElement.waitFor({ state: 'visible' })
 
       const usernameText = await usernameElement.textContent()
       if (usernameText && usernameText.trim()) {
@@ -261,7 +257,7 @@ export class M3SPLoginPage {
     try {
       // 「スキップする」リンクを探す
       const skipLink = this.page.getByText('スキップする')
-      if (await skipLink.isVisible({ timeout: 3000 })) {
+      if (await skipLink.isVisible()) {
         await skipLink.click()
         console.log('✅ ログイン後CAをスキップしました（スキップする）')
         return
@@ -273,7 +269,7 @@ export class M3SPLoginPage {
     try {
       // 「あとで確認する」リンクを探す
       const laterLink = this.page.getByText('あとで確認する')
-      if (await laterLink.isVisible({ timeout: 3000 })) {
+      if (await laterLink.isVisible()) {
         await laterLink.click()
         console.log('✅ ログイン後CAをスキップしました（あとで確認する）')
         return
@@ -298,18 +294,18 @@ export class M3SPLoginPage {
     try {
       // 1. メニューボタンをクリック
       const menuButton = this.page.getByRole('button', { name: 'メニュー' })
-      await menuButton.waitFor({ state: 'visible', timeout: 10000 })
+      await menuButton.waitFor({ state: 'visible' })
       await menuButton.click()
       console.log('✅ メニューボタンをクリックしました')
 
       // 2. ログアウトリンクをクリック
       const logoutLink = this.page.getByRole('link', { name: 'ログアウト' })
-      await logoutLink.waitFor({ state: 'visible', timeout: 5000 })
+      await logoutLink.waitFor({ state: 'visible' })
       await logoutLink.click()
       console.log('✅ ログアウトリンクをクリックしました')
 
       // 3. ページ遷移の完了を待機
-      await this.page.waitForLoadState('domcontentloaded', { timeout: 30000 })
+      await this.page.waitForLoadState('domcontentloaded')
       console.log('✅ ログアウト処理が正常に完了しました')
 
     } catch (error) {
@@ -328,9 +324,9 @@ export class M3SPLoginPage {
       for (const selector of fallbackSelectors) {
         try {
           const element = this.page.locator(selector).first()
-          if (await element.isVisible({ timeout: 3000 })) {
+          if (await element.isVisible()) {
             await element.click()
-            await this.page.waitForLoadState('domcontentloaded', { timeout: 30000 })
+            await this.page.waitForLoadState('domcontentloaded')
             console.log(`✅ フォールバックログアウトが成功しました: ${selector}`)
             return
           }
@@ -343,3 +339,4 @@ export class M3SPLoginPage {
     }
   }
 }
+
