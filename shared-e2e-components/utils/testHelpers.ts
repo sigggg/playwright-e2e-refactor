@@ -356,7 +356,7 @@ export class TestHelpers {
           }
         }
       } catch (e) {
-        // エラーが発生した場合は無視
+        console.warn(`⚠️ requestfinished: レスポンス情報の取得に失敗: ${request.url()}`, e instanceof Error ? e.message : e)
       }
     })
 
@@ -430,8 +430,10 @@ export class TestHelpers {
       try {
         const response = await request.response()
         if (response) { status = response.status() }
-      } catch {}
-      
+      } catch (e) {
+        console.warn(`⚠️ requestfailed: レスポンス情報の取得に失敗: ${url}`, e instanceof Error ? e.message : e)
+      }
+
       if ((status && status >= 400) || errorText) {
         if (!this.shouldIgnoreError(`${url} status=${status} ${errorText}`, url)) {
           errorDump.push({
