@@ -66,8 +66,9 @@ export class M3LoginPage {
         waitUntil: 'domcontentloaded',
         timeout: 60000
       })
-    } catch (error) {
-      console.warn(`⚠️ 初期アクセスが失敗、loadイベントで再試行: ${error.message}`)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.warn(`⚠️ 初期アクセスが失敗、loadイベントで再試行: ${errorMessage}`)
       await this.page.goto(m3comURL, {
         waitUntil: 'load',
         timeout: 60000
@@ -102,7 +103,7 @@ export class M3LoginPage {
       await loginIdField.waitFor({ state: 'visible', timeout: 10000 })
       console.log('✅ ログインフォームが既に表示されています')
       return
-    } catch (error) {
+    } catch (error: unknown) {
       console.log('🔍 ログインフォームが非表示、ログインボタンを探索中...')
     }
 
@@ -126,7 +127,7 @@ export class M3LoginPage {
           loginButtonFound = true
           break
         }
-      } catch (error) {
+      } catch (error: unknown) {
         continue
       }
     }
@@ -158,8 +159,9 @@ export class M3LoginPage {
       await passwordField.fill(credentials.password)
       console.log('✅ パスワードを入力しました')
 
-    } catch (error) {
-      throw new Error(`❌ ログインフォームの入力に失敗しました: ${error.message}`)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new Error(`❌ ログインフォームの入力に失敗しました: ${errorMessage}`)
     }
   }
 
@@ -208,8 +210,9 @@ export class M3LoginPage {
       // ページ遷移の完了を待機
       await this.page.waitForLoadState('domcontentloaded')
 
-    } catch (error) {
-      throw new Error(`❌ ログイン送信処理でエラーが発生しました: ${error.message}`)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new Error(`❌ ログイン送信処理でエラーが発生しました: ${errorMessage}`)
     }
   }
 
@@ -232,7 +235,7 @@ export class M3LoginPage {
         console.log(`✅ M3.comログイン成功確認。ユーザー名: ${usernameText.trim()}`)
         return
       }
-    } catch (error) {
+    } catch (error: unknown) {
       throw new Error('❌ M3.comログイン失敗: ユーザー名ヘッダーが見つかりません')
     }
 
@@ -291,8 +294,9 @@ export class M3LoginPage {
       await this.page.waitForLoadState('domcontentloaded', { timeout: 30000 })
       console.log('✅ ログアウト処理が正常に完了しました')
 
-    } catch (error) {
-      console.warn(`⚠️ ユーザー情報ドロップダウン経由のログアウトに失敗しました: ${error.message}`)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.warn(`⚠️ ユーザー情報ドロップダウン経由のログアウトに失敗しました: ${errorMessage}`)
       
       // フォールバック: 直接的なログアウト要素の検索
       console.log('🔄 フォールバックログアウト処理を試行中...')

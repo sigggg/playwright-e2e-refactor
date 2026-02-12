@@ -31,7 +31,6 @@ refactor-agentが以下のステップを自律的に実行します：
 ### STEP 3: 本格リファクタリング
 - **Page Object Modelパターンの適用**
   - コンストラクタでのreadonly Locator初期化
-  - Page Object内でexpect禁止（データを返してテスト側でアサーション）
 - **役割ベースセレクタへの変換**
   - getByTestId > getByRole > getByLabel > locator('#id') > getByText
 - **test.step構造化**

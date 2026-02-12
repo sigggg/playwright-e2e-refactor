@@ -167,7 +167,7 @@ export class HeaderComponent {
     try {
       await this.atlasHeader.waitFor({ state: 'visible', timeout })
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       return false
     }
   }
@@ -191,8 +191,9 @@ export class HeaderComponent {
         console.log(`✅ ログイン状態確認成功: ${usernameText.trim()}`)
         return true
       }
-    } catch (error) {
-      console.log(`⚠️ ログイン状態を確認できませんでした: ${error.message}`)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.log(`⚠️ ログイン状態を確認できませんでした: ${errorMessage}`)
     }
 
     return false
@@ -215,8 +216,9 @@ export class HeaderComponent {
         console.log(`✅ ユーザー名取得成功: ${text.trim()}`)
         return text.trim()
       }
-    } catch (error) {
-      console.log(`⚠️ ユーザー名を取得できませんでした: ${error.message}`)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.log(`⚠️ ユーザー名を取得できませんでした: ${errorMessage}`)
     }
 
     return ''
@@ -234,7 +236,7 @@ export class HeaderComponent {
       const text = await this.pointAmount.textContent()
       const match = text?.match(/(\d+)/)
       return match ? parseInt(match[1], 10) : 0
-    } catch (error) {
+    } catch (error: unknown) {
       return 0
     }
   }
@@ -251,7 +253,7 @@ export class HeaderComponent {
       const text = await this.actionAmount.textContent()
       const match = text?.match(/(\d+)/)
       return match ? parseInt(match[1], 10) : 0
-    } catch (error) {
+    } catch (error: unknown) {
       return 0
     }
   }
@@ -267,7 +269,7 @@ export class HeaderComponent {
       await this.memberStatus.waitFor({ state: 'visible', timeout })
       const text = await this.memberStatus.textContent()
       return text?.trim() || ''
-    } catch (error) {
+    } catch (error: unknown) {
       return ''
     }
   }
@@ -318,7 +320,7 @@ export class HeaderComponent {
       const text = await this.messagesBadge.textContent()
       const match = text?.match(/(\d+)/)
       return match ? parseInt(match[1], 10) : 0
-    } catch (error) {
+    } catch (error: unknown) {
       return 0
     }
   }
@@ -334,7 +336,7 @@ export class HeaderComponent {
       await this.todoBadge.waitFor({ state: 'visible', timeout })
       const text = await this.todoBadge.textContent()
       return text?.trim() || ''
-    } catch (error) {
+    } catch (error: unknown) {
       return ''
     }
   }

@@ -118,9 +118,6 @@ export class LoginPage {
 }
 ```
 
-**Page Object内でアサーションを行わない**
-→ 操作と検証を分離することで、**Page Objectの再利用性**が向上する
-
 **URL遷移時は`waitUntil: 'domcontentloaded'`を指定する**
 → `networkidle`や`load`を避けることで、**外部サービスエラーによるタイムアウトを防止する**
 
@@ -249,7 +246,6 @@ await page.goto('/news')
 |--------|---------------|
 | getByRole・getByLabel優先 | UIの変更に強い堅牢なテスト |
 | コンストラクタでlocator初期化 | パフォーマンス向上と型安全性 |
-| Page Object内でexpect禁止 | Page Objectの再利用性向上 |
 | test.stepで構造化 | 失敗箇所の特定が容易 |
 | テストコード内でconsole.log禁止 | レポートの簡潔化 |
 | waitUntil: 'domcontentloaded' | 外部サービスエラーによるタイムアウト防止 |
