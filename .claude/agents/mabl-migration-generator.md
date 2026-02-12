@@ -192,11 +192,6 @@ export class LoginPage {
 }
 ```
 
-### Page Object内でアサーションを行わない
-
-**Page Objectは操作のみ、検証はテストコードで行う**
-→ Page Objectの再利用性が向上する
-
 ### waitUntil: 'domcontentloaded'を指定する
 
 **URL遷移時は`waitUntil: 'domcontentloaded'`を使う**
