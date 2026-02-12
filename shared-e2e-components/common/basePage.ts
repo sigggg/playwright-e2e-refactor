@@ -66,8 +66,9 @@ export abstract class BasePage {
     try {
       await this.page.waitForLoadState('domcontentloaded', { timeout })
       console.log('✅ ページの読み込みが完了しました')
-    } catch (error) {
-      console.warn(`⚠️ ページ読み込みタイムアウトが発生しましたが、テストを続行します: ${error.message}`)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.warn(`⚠️ ページ読み込みタイムアウトが発生しましたが、テストを続行します: ${errorMessage}`)
     }
   }
 
@@ -98,8 +99,9 @@ export abstract class BasePage {
         await locator.click()
         console.log(`✅ 要素のクリックが成功しました: ${locator}`)
         return
-      } catch (error) {
-        console.warn(`⚠️ クリック試行 ${i + 1} 回目が失敗: ${error.message}`)
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.warn(`⚠️ クリック試行 ${i + 1} 回目が失敗: ${errorMessage}`)
         if (i === maxRetries - 1) {
           throw new Error(`❌ ${maxRetries}回の試行後もクリックに失敗しました: ${locator}`)
         }
@@ -161,7 +163,7 @@ export abstract class BasePage {
     try {
       await locator.waitFor({ state: 'visible', timeout })
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       return false
     }
   }
@@ -177,7 +179,7 @@ export abstract class BasePage {
     try {
       await locator.waitFor({ state: 'hidden', timeout })
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       return false
     }
   }
@@ -308,7 +310,7 @@ export abstract class BasePage {
             }
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         // エラーが見つからない場合は続行
       }
     }

@@ -115,7 +115,7 @@ export class HeaderComponentSP {
     try {
       await this.atlasHeader.waitFor({ state: 'attached', timeout })
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       return false
     }
   }
@@ -140,8 +140,9 @@ export class HeaderComponentSP {
         console.log(`✅ SP版ログイン状態確認成功: ${usernameText.trim()}`)
         return true
       }
-    } catch (error) {
-      console.log(`⚠️ SP版ログイン状態を確認できませんでした: ${error.message}`)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.log(`⚠️ SP版ログイン状態を確認できませんでした: ${errorMessage}`)
     }
 
     return false
@@ -166,8 +167,9 @@ export class HeaderComponentSP {
         console.log(`✅ SP版ユーザー名取得成功: ${text.trim()}`)
         return text.trim()
       }
-    } catch (error) {
-      console.log(`⚠️ SP版ユーザー名を取得できませんでした: ${error.message}`)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.log(`⚠️ SP版ユーザー名を取得できませんでした: ${errorMessage}`)
     }
 
     return ''
@@ -185,8 +187,9 @@ export class HeaderComponentSP {
       await this.hamburgerMenu.waitFor({ state: 'visible', timeout })
       await this.hamburgerMenu.click()
       console.log('✅ ハンバーガーメニューを開きました')
-    } catch (error) {
-      console.log(`⚠️ ハンバーガーメニューを開けませんでした: ${error.message}`)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.log(`⚠️ ハンバーガーメニューを開けませんでした: ${errorMessage}`)
       throw error
     }
   }
@@ -237,7 +240,7 @@ export class HeaderComponentSP {
       const text = await this.messagesBadge.textContent()
       const match = text?.match(/(\d+)/)
       return match ? parseInt(match[1], 10) : 0
-    } catch (error) {
+    } catch (error: unknown) {
       return 0
     }
   }
@@ -253,7 +256,7 @@ export class HeaderComponentSP {
       await this.todoBadge.waitFor({ state: 'visible', timeout })
       const text = await this.todoBadge.textContent()
       return text?.trim() || ''
-    } catch (error) {
+    } catch (error: unknown) {
       return ''
     }
   }
@@ -268,7 +271,7 @@ export class HeaderComponentSP {
     try {
       await this.topNavigation.waitFor({ state: 'visible', timeout })
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       return false
     }
   }
@@ -283,7 +286,7 @@ export class HeaderComponentSP {
     try {
       await this.bottomNavigation.waitFor({ state: 'visible', timeout })
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       return false
     }
   }
