@@ -223,7 +223,7 @@ export class HeaderComponentSP {
     }
 
     console.log(`🖱️ SP版${serviceType}サービスアイコンをクリック中...`)
-    await service.waitFor({ state: 'visible', timeout: 10000 })
+    await service.waitFor({ state: 'visible' })
     await service.click()
     console.log(`✅ SP版${serviceType}サービスアイコンのクリックが完了しました`)
   }

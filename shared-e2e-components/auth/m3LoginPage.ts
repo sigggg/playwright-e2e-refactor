@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test'
+import { BasePage } from '../common/basePage'
 
 /**
  * M3.comログイン認証情報のインターフェース
@@ -18,11 +19,9 @@ export interface LoginCredentials {
  * - 堅牢なエラーハンドリングとログ出力
  * - 各サービス固有の遷移処理は含まない
  */
-export class M3LoginPage {
-  readonly page: Page
-
+export class M3LoginPage extends BasePage {
   constructor(page: Page) {
-    this.page = page
+    super(page)
   }
 
   /**
@@ -63,15 +62,13 @@ export class M3LoginPage {
     
     try {
       await this.page.goto(m3comURL, {
-        waitUntil: 'domcontentloaded',
-        timeout: 60000
+        waitUntil: 'domcontentloaded'
       })
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.warn(`⚠️ 初期アクセスが失敗、loadイベントで再試行: ${errorMessage}`)
       await this.page.goto(m3comURL, {
-        waitUntil: 'load',
-        timeout: 60000
+        waitUntil: 'load'
       })
     }
   }
@@ -100,7 +97,7 @@ export class M3LoginPage {
 
     try {
       const loginIdField = this.page.getByPlaceholder('ログインID')
-      await loginIdField.waitFor({ state: 'visible', timeout: 10000 })
+      await loginIdField.waitFor({ state: 'visible' })
       console.log('✅ ログインフォームが既に表示されています')
       return
     } catch (error: unknown) {
@@ -121,7 +118,7 @@ export class M3LoginPage {
     for (const selector of loginSelectors) {
       try {
         const element = this.page.locator(selector).first()
-        if (await element.isVisible({ timeout: 5000 })) {
+        if (await element.isVisible()) {
           console.log(`✅ ログインボタンを発見: ${selector}`)
           await element.click()
           loginButtonFound = true
@@ -149,13 +146,13 @@ export class M3LoginPage {
     try {
       // ログインID入力フィールド（placeholder-basedセレクタ）
       const loginIdField = this.page.getByPlaceholder('ログインID')
-      await loginIdField.waitFor({ state: 'visible', timeout: 10000 })
+      await loginIdField.waitFor({ state: 'visible' })
       await loginIdField.fill(credentials.username)
       console.log('✅ ログインIDを入力しました')
 
       // パスワード入力フィールド（placeholder-basedセレクタ）
       const passwordField = this.page.getByPlaceholder('パスワード')
-      await passwordField.waitFor({ state: 'visible', timeout: 5000 })
+      await passwordField.waitFor({ state: 'visible' })
       await passwordField.fill(credentials.password)
       console.log('✅ パスワードを入力しました')
 
@@ -177,15 +174,14 @@ export class M3LoginPage {
       response =>
         response.url().includes('/login') &&
         response.request().method() === 'POST' &&
-        (response.status() === 200 || response.status() === 303),
-      { timeout: 30000 }
+        (response.status() === 200 || response.status() === 303)
     )
 
     try {
       // ログインボタンを特定（役割ベースセレクタを優先）
       const loginButton = this.page.getByRole('button', { name: /ログイン/ })
 
-      await loginButton.waitFor({ state: 'visible', timeout: 10000 })
+      await loginButton.waitFor({ state: 'visible' })
       await loginButton.click()
       console.log('✅ ログインボタンをクリックしました')
 
@@ -228,7 +224,7 @@ export class M3LoginPage {
       // ユーザー名は「〇〇先生」または「〇〇さん」の形式で表示される
       const usernameElement = this.page.getByText(/先生|さん/).first()
 
-      await usernameElement.waitFor({ state: 'visible', timeout: 10000 })
+      await usernameElement.waitFor({ state: 'visible' })
 
       const usernameText = await usernameElement.textContent()
       if (usernameText && usernameText.trim()) {
@@ -254,7 +250,7 @@ export class M3LoginPage {
     try {
       await this.page
         .getByRole('link', { name: 'スキップする' })
-        .click({ timeout: 300 })
+        .click()
       console.log('✅ ログイン後CAをスキップしました')
     } catch {
       // スキップする文言リンクが表示されない場合は何もしない
@@ -275,23 +271,23 @@ export class M3LoginPage {
     try {
       // 1. ユーザー名をクリックしてドロップダウンを開く（役割ベースセレクタを優先）
       const userNameButton = this.page.getByText(/先生|さん/).first()
-      await userNameButton.waitFor({ state: 'visible', timeout: 10000 })
+      await userNameButton.waitFor({ state: 'visible' })
       await userNameButton.click()
       console.log('✅ ユーザー情報ドロップダウンを開きました')
 
       // 2. ドロップダウンが表示されるまで待機
       const userInfoBox = this.page.getByRole('menu')
-      await userInfoBox.waitFor({ state: 'visible', timeout: 5000 })
+      await userInfoBox.waitFor({ state: 'visible' })
       console.log('✅ ユーザー情報ボックスが表示されました')
 
       // 3. ログアウトリンクをクリック（役割ベースセレクタを優先）
       const logoutLink = this.page.getByRole('link', { name: 'ログアウト' })
-      await logoutLink.waitFor({ state: 'visible', timeout: 5000 })
+      await logoutLink.waitFor({ state: 'visible' })
       await logoutLink.click()
       console.log('✅ ログアウトボタンをクリックしました')
 
       // 4. ページ遷移の完了を待機
-      await this.page.waitForLoadState('domcontentloaded', { timeout: 30000 })
+      await this.page.waitForLoadState('domcontentloaded')
       console.log('✅ ログアウト処理が正常に完了しました')
 
     } catch (error: unknown) {
@@ -311,9 +307,9 @@ export class M3LoginPage {
       for (const selector of fallbackSelectors) {
         try {
           const element = this.page.locator(selector).first()
-          if (await element.isVisible({ timeout: 3000 })) {
+          if (await element.isVisible()) {
             await element.click()
-            await this.page.waitForLoadState('domcontentloaded', { timeout: 30000 })
+            await this.page.waitForLoadState('domcontentloaded')
             console.log(`✅ フォールバックログアウトが成功しました: ${selector}`)
             return
           }

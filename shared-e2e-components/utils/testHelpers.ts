@@ -163,7 +163,7 @@ export class TestHelpers {
 
     for (const element of navigationElements) {
       try {
-        await expect(this.page.locator(element).first()).toBeVisible({ timeout: 5000 })
+        await expect(this.page.locator(element).first()).toBeVisible()
         console.log(`✅ ${element}要素を確認しました`)
       } catch (error) {
         console.warn(`⚠️ ${element}要素が見つかりませんでしたが、テストを続行します`)
@@ -250,7 +250,7 @@ export class TestHelpers {
         
         for (let i = 0; i < count; i++) {
           const element = errorElements.nth(i)
-          if (await element.isVisible({ timeout: 1000 })) {
+          if (await element.isVisible()) {
             const errorText = await element.textContent()
             if (errorText && errorText.trim()) {
               errors.push(errorText.trim())
@@ -510,7 +510,7 @@ export class TestHelpers {
 
     for (let i = 0; i < maxRetries; i++) {
       try {
-        await locator.waitFor({ state: 'visible', timeout: 5000 })
+        await locator.waitFor({ state: 'visible' })
         await locator.click()
         console.log(`✅ 要素のクリックが成功しました: ${locator}`)
         return
@@ -565,7 +565,7 @@ export class TestHelpers {
   async fillWithClear(locator: Locator, text: string): Promise<void> {
     console.log(`📝 テキストを入力中: ${text}`)
     
-    await locator.waitFor({ state: 'visible', timeout: 5000 })
+    await locator.waitFor({ state: 'visible' })
     await locator.clear()
     await locator.fill(text)
     
