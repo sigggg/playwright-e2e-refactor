@@ -59,15 +59,13 @@ export class AuthHelper {
     console.log(`📡 Navigating to ${m3comURL}`)
     try {
       await this.page.goto(m3comURL, {
-        waitUntil: 'domcontentloaded',
-        timeout: 60000
+        waitUntil: 'domcontentloaded'
       })
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.warn(`⚠️ Initial navigation failed, trying with load event: ${errorMessage}`)
       await this.page.goto(m3comURL, {
-        waitUntil: 'load',
-        timeout: 60000
+        waitUntil: 'load'
       })
     }
 
@@ -87,7 +85,7 @@ export class AuthHelper {
     console.log(`📡 Manually navigating to ${ebookURL} after login`)
     console.log(`🔍 Current URL before navigation: ${this.page.url()}`)
     
-    await this.page.goto(ebookURL, { waitUntil: 'domcontentloaded', timeout: 30000 })
+    await this.page.goto(ebookURL, { waitUntil: 'domcontentloaded' })
 
     console.log(`🔍 URL after navigation: ${this.page.url()}`)
 
@@ -118,7 +116,7 @@ export class AuthHelper {
       
       for (const field of loginFields) {
         try {
-          await expect(field).toBeVisible({ timeout: 3000 })
+          await expect(field).toBeVisible()
           console.log('✅ Login form is already visible on the page')
           return
         } catch {
@@ -157,7 +155,7 @@ export class AuthHelper {
     for (let i = 0; i < loginStrategies.length; i++) {
       const strategy = loginStrategies[i]
       try {
-        await expect(strategy).toBeVisible({ timeout: 3000 })
+        await expect(strategy).toBeVisible()
         console.log(`✅ Found login button with strategy ${i + 1}/${loginStrategies.length}`)
         await strategy.click()
         loginButtonFound = true
@@ -210,7 +208,7 @@ export class AuthHelper {
       for (let i = 0; i < loginIdStrategies.length; i++) {
         try {
           const field = loginIdStrategies[i]
-          await expect(field).toBeVisible({ timeout: 3000 })
+          await expect(field).toBeVisible()
           loginIdField = field
           console.log(`✅ Found loginId field with strategy ${i + 1}/${loginIdStrategies.length}`)
           break
@@ -248,7 +246,7 @@ export class AuthHelper {
       for (let i = 0; i < passwordStrategies.length; i++) {
         try {
           const field = passwordStrategies[i]
-          await expect(field).toBeVisible({ timeout: 3000 })
+          await expect(field).toBeVisible()
           passwordField = field
           console.log(`✅ Found password field with strategy ${i + 1}/${passwordStrategies.length}`)
           break
@@ -311,7 +309,7 @@ export class AuthHelper {
       for (let i = 0; i < loginButtonStrategies.length; i++) {
         try {
           const button = loginButtonStrategies[i]
-          await expect(button).toBeVisible({ timeout: 3000 })
+          await expect(button).toBeVisible()
           loginButton = button
           console.log(`✅ Found login button with strategy ${i + 1}/${loginButtonStrategies.length}`)
           break
@@ -384,7 +382,7 @@ export class AuthHelper {
     for (let i = 0; i < usernameStrategies.length; i++) {
       try {
         const usernameElement = usernameStrategies[i]
-        await expect(usernameElement).toBeVisible({ timeout: 3000 })
+        await expect(usernameElement).toBeVisible()
         
         const usernameText = await usernameElement.textContent()
         if (usernameText && usernameText.trim()) {
@@ -400,7 +398,7 @@ export class AuthHelper {
     try {
       // ログアウトボタンの存在でログイン状態を確認
       const logoutButton = this.page.getByRole('button', { name: /ログアウト|logout/i })
-      await expect(logoutButton).toBeVisible({ timeout: 5000 })
+      await expect(logoutButton).toBeVisible()
       console.log('✅ Login success confirmed by logout button presence')
       return
     } catch (error: unknown) {
@@ -447,7 +445,7 @@ export class AuthHelper {
     for (let i = 0; i < loginIndicatorStrategies.length; i++) {
       try {
         const indicator = loginIndicatorStrategies[i]
-        await expect(indicator).toBeVisible({ timeout: 3000 });
+        await expect(indicator).toBeVisible();
         console.log(`✅ Ebook login state confirmed with strategy ${i + 1}/${loginIndicatorStrategies.length}`);
         ebookLoginConfirmed = true;
         break;
@@ -470,7 +468,7 @@ export class AuthHelper {
         
         for (const strategy of alternativeStrategies) {
           try {
-            await expect(strategy).toBeVisible({ timeout: 2000 });
+            await expect(strategy).toBeVisible();
             console.log('✅ Ebook login state confirmed with alternative method');
             ebookLoginConfirmed = true;
             break;
@@ -485,7 +483,7 @@ export class AuthHelper {
       // フォールバック2: URLとページタイトルで基本確認
       if (!ebookLoginConfirmed) {
         try {
-          await expect(this.page).toHaveTitle(/m3\.com|電子書籍/, { timeout: 5000 });
+          await expect(this.page).toHaveTitle(/m3\.com|電子書籍/, );
           expect(this.page.url()).toContain('ebook-qa1.m3.com');
           console.log('✅ Basic ebook site access confirmed');
         } catch (error: unknown) {
@@ -528,7 +526,7 @@ export class AuthHelper {
     for (let i = 0; i < logoutStrategies.length; i++) {
       try {
         const strategy = logoutStrategies[i]
-        await expect(strategy).toBeVisible({ timeout: 3000 })
+        await expect(strategy).toBeVisible()
         await strategy.click()
         await this.page.waitForLoadState('domcontentloaded')
         console.log(`✅ Logged out successfully with strategy ${i + 1}/${logoutStrategies.length}`)

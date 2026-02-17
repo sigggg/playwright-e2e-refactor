@@ -50,8 +50,7 @@ export abstract class BasePage {
 
     console.log(`📡 ${targetUrl} にナビゲート中...`)
     await this.page.goto(targetUrl, {
-      waitUntil: options?.waitUntil || 'domcontentloaded',
-      timeout: 60000
+      waitUntil: options?.waitUntil || 'domcontentloaded'
     })
     console.log(`✅ ${targetUrl} への遷移が完了しました`)
   }
@@ -95,7 +94,7 @@ export abstract class BasePage {
 
     for (let i = 0; i < maxRetries; i++) {
       try {
-        await locator.waitFor({ state: 'visible', timeout: 5000 })
+        await locator.waitFor({ state: 'visible' })
         await locator.click()
         console.log(`✅ 要素のクリックが成功しました: ${locator}`)
         return
@@ -118,11 +117,11 @@ export abstract class BasePage {
    */
   async fillWithClear(locator: Locator, text: string): Promise<void> {
     console.log(`📝 テキストを入力中: ${text}`)
-    
-    await locator.waitFor({ state: 'visible', timeout: 5000 })
+
+    await locator.waitFor({ state: 'visible' })
     await locator.clear()
     await locator.fill(text)
-    
+
     console.log(`✅ テキスト入力が完了しました: ${text}`)
   }
 
@@ -209,10 +208,10 @@ export abstract class BasePage {
    */
   async selectDropdownOption(locator: Locator, value: string): Promise<void> {
     console.log(`📋 ドロップダウンから選択中: ${value}`)
-    
-    await locator.waitFor({ state: 'visible', timeout: 5000 })
+
+    await locator.waitFor({ state: 'visible' })
     await locator.selectOption(value)
-    
+
     console.log(`✅ ドロップダウン選択が完了しました: ${value}`)
   }
 
@@ -224,10 +223,10 @@ export abstract class BasePage {
    */
   async setCheckboxState(locator: Locator, checked: boolean): Promise<void> {
     console.log(`☑️ チェックボックス状態を設定中: ${checked}`)
-    
-    await locator.waitFor({ state: 'visible', timeout: 5000 })
+
+    await locator.waitFor({ state: 'visible' })
     await locator.setChecked(checked)
-    
+
     console.log(`✅ チェックボックス状態の設定が完了しました: ${checked}`)
   }
 
@@ -303,7 +302,7 @@ export abstract class BasePage {
         
         for (let i = 0; i < count; i++) {
           const element = errorElements.nth(i)
-          if (await element.isVisible({ timeout: 1000 })) {
+          if (await element.isVisible()) {
             const errorText = await element.textContent()
             if (errorText && errorText.trim()) {
               errors.push(errorText.trim())

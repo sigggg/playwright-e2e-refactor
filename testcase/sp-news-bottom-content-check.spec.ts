@@ -1,17 +1,6 @@
 import { test, expect, devices } from '@playwright/test'
-import * as dotenv from 'dotenv'
 import { M3SPLoginPage } from '../shared-e2e-components/auth/M3SPLoginPage'
-
-dotenv.config()
-
-/**
- * SPニューステスト用の認証情報
- * 注: auth.setup.tsと同じ環境変数を使用
- */
-const SP_TEST_USER = {
-  username: process.env.USERNAME || '',
-  password: process.env.PASSWORD || ''
-}
+import { TEST_ACCOUNTS } from './data/test-accounts'
 
 /**
  * SPサイトのベースURL
@@ -70,7 +59,7 @@ test('C001_SP_医療ニュース_下部コンテンツ存在チェック', async
   await test.step('M3.com SPサイトにログイン', async () => {
     const spLoginPage = new M3SPLoginPage(page)
     await spLoginPage.navigate()
-    await spLoginPage.performLogin(SP_TEST_USER)
+    await spLoginPage.performLogin(TEST_ACCOUNTS.sp)
   })
 
   await test.step('医療ニュース記事の下部コンテンツ確認', async () => {
