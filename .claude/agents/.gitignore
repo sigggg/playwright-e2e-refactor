@@ -1,0 +1,12 @@
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# 他者作成のエージェント（プッシュしない）
+qa-testcase-assistant.md
+
+# バックアップフォルダ
+bkup/
