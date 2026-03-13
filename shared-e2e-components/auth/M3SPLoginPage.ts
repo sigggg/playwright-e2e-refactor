@@ -230,7 +230,7 @@ export class M3SPLoginPage extends BasePage {
 
     try {
       // SP版のユーザー名表示要素を確認（フッター内の専用クラス）
-      // 例: "ユニットヨ 先生"
+      // 例: "ユニットヨ 先生"、"ユニットヨ さん"、"ユニットヨ 様"
       const usernameElement = this.page.locator('.atlas-sp-userinfo__name')
       await usernameElement.waitFor({ state: 'visible' })
 

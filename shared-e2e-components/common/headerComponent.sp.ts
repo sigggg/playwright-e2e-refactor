@@ -96,7 +96,7 @@ export class HeaderComponentSP {
 
     // ユーザー名表示要素（SP版）
     // SP版ではフッター内の専用クラスでユーザー名が表示される
-    // 例: "ユニットヨ 先生"
+    // 例: "ユニットヨ 先生"、"ユニットヨ さん"、"ユニットヨ 様"
     this.userName = page.locator('.atlas-sp-userinfo__name')
   }
 

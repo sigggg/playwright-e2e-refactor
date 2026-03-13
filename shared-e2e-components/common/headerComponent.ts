@@ -74,7 +74,7 @@ export class HeaderComponent {
     // ユーザー名表示要素（M3共通）（役割ベースセレクタ対応）
     // 注: banner内ではなく、ページ全体から検索
     this.userName = trySelectors([
-      () => page.getByRole('button', { name: /先生|さん/ }),
+      () => page.getByRole('button', { name: /先生|さん|様/ }),
       () => page.locator('.atlas-header__username'),
       () => page.locator('.atlas-header__name')
     ])
@@ -354,7 +354,7 @@ export class HeaderComponent {
  * ```typescript
  * constructor(page: Page) {
  *   this.page = page;
- *   this.userName = page.getByRole('button', { name: /先生|さん/ });
+ *   this.userName = page.getByRole('button', { name: /先生|さん|様/ });
  *   // 全てのLocatorをコンストラクタで初期化
  * }
  * ```

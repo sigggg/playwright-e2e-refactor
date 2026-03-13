@@ -221,8 +221,8 @@ export class M3LoginPage extends BasePage {
 
     try {
       // M3.comヘッダーのユーザー名表示を確認（役割ベースセレクタを優先）
-      // ユーザー名は「〇〇先生」または「〇〇さん」の形式で表示される
-      const usernameElement = this.page.getByText(/先生|さん/).first()
+      // ユーザー名は「〇〇先生」「〇〇さん」または「〇〇様」の形式で表示される
+      const usernameElement = this.page.getByText(/先生|さん|様/).first()
 
       await usernameElement.waitFor({ state: 'visible' })
 
@@ -270,7 +270,7 @@ export class M3LoginPage extends BasePage {
 
     try {
       // 1. ユーザー名をクリックしてドロップダウンを開く（役割ベースセレクタを優先）
-      const userNameButton = this.page.getByText(/先生|さん/).first()
+      const userNameButton = this.page.getByText(/先生|さん|様/).first()
       await userNameButton.waitFor({ state: 'visible' })
       await userNameButton.click()
       console.log('✅ ユーザー情報ドロップダウンを開きました')
