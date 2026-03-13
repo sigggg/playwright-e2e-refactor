@@ -62,10 +62,9 @@ export class AuthHelper {
         waitUntil: 'domcontentloaded',
         timeout: 60000
       })
-      // 追加の待機時間
-      await this.page.waitForTimeout(3000)
-    } catch (error) {
-      console.warn(`⚠️ Initial navigation failed, trying with load event: ${error.message}`)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.warn(`⚠️ Initial navigation failed, trying with load event: ${errorMessage}`)
       await this.page.goto(m3comURL, {
         waitUntil: 'load',
         timeout: 60000
@@ -89,13 +88,8 @@ export class AuthHelper {
     console.log(`🔍 Current URL before navigation: ${this.page.url()}`)
     
     await this.page.goto(ebookURL, { waitUntil: 'domcontentloaded', timeout: 30000 })
-    
+
     console.log(`🔍 URL after navigation: ${this.page.url()}`)
-    
-    // DOMが準備できるまで少し待機（画像404エラーを無視）
-    await this.page.waitForTimeout(2000)
-    
-    console.log(`🔍 Final URL after stabilization: ${this.page.url()}`)
 
     // 7. ebook サイトでのログイン状態を確認
     await this.verifyEbookLoginState()
@@ -133,7 +127,7 @@ export class AuthHelper {
       }
       
       console.log('🔍 Login form not visible, looking for login button...')
-    } catch (error) {
+    } catch (error: unknown) {
       console.log('🔍 Login form not visible, looking for login button...')
     }
 
@@ -168,7 +162,7 @@ export class AuthHelper {
         await strategy.click()
         loginButtonFound = true
         break
-      } catch (error) {
+      } catch (error: unknown) {
         continue
       }
     }
@@ -271,8 +265,9 @@ export class AuthHelper {
       console.log('✅ Successfully filled password field')
 
       console.log('✅ Login form filled successfully')
-    } catch (error) {
-      throw new Error(`❌ Login form filling failed: ${error.message}`)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new Error(`❌ Login form filling failed: ${errorMessage}`)
     }
   }
 
@@ -348,8 +343,9 @@ export class AuthHelper {
 
       // ページの遷移を待機
       await this.page.waitForLoadState('domcontentloaded')
-    } catch (error) {
-      throw new Error(`❌ Login submission failed: ${error.message}`)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new Error(`❌ Login submission failed: ${errorMessage}`)
     }
   }
 
@@ -395,7 +391,7 @@ export class AuthHelper {
           console.log(`✅ Login success confirmed with username: ${usernameText.trim()} (strategy ${i + 1}/${usernameStrategies.length})`)
           return
         }
-      } catch (error) {
+      } catch (error: unknown) {
         continue
       }
     }
@@ -407,7 +403,7 @@ export class AuthHelper {
       await expect(logoutButton).toBeVisible({ timeout: 5000 })
       console.log('✅ Login success confirmed by logout button presence')
       return
-    } catch (error) {
+    } catch (error: unknown) {
       // ユーザー名もログアウトボタンも見つからない場合はログイン失敗
       throw new Error('❌ Login failed: No login indicators found with any strategy')
     }
@@ -455,7 +451,7 @@ export class AuthHelper {
         console.log(`✅ Ebook login state confirmed with strategy ${i + 1}/${loginIndicatorStrategies.length}`);
         ebookLoginConfirmed = true;
         break;
-      } catch (error) {
+      } catch (error: unknown) {
         continue;
       }
     }
@@ -482,7 +478,7 @@ export class AuthHelper {
             continue;
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         // 代替方法も失敗
       }
       
@@ -492,7 +488,7 @@ export class AuthHelper {
           await expect(this.page).toHaveTitle(/m3\.com|電子書籍/, { timeout: 5000 });
           expect(this.page.url()).toContain('ebook-qa1.m3.com');
           console.log('✅ Basic ebook site access confirmed');
-        } catch (error) {
+        } catch (error: unknown) {
           console.warn('⚠️ Basic ebook site verification also failed, but proceeding with tests...');
         }
       }
@@ -537,7 +533,7 @@ export class AuthHelper {
         await this.page.waitForLoadState('domcontentloaded')
         console.log(`✅ Logged out successfully with strategy ${i + 1}/${logoutStrategies.length}`)
         return
-      } catch (error) {
+      } catch (error: unknown) {
         continue
       }
     }

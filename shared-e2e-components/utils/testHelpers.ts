@@ -186,8 +186,6 @@ export class TestHelpers {
     try {
       await this.page.waitForLoadState('networkidle', { timeout })
       await this.page.waitForLoadState('domcontentloaded', { timeout })
-      // 追加の安定化待機
-      await this.page.waitForTimeout(1000)
       console.log('✅ ページの読み込みが完了しました')
     } catch (error) {
       console.warn(`⚠️ ページ読み込みタイムアウトが発生しましたが、テストを続行します: ${error.message}`)
@@ -358,7 +356,7 @@ export class TestHelpers {
           }
         }
       } catch (e) {
-        // エラーが発生した場合は無視
+        console.warn(`⚠️ requestfinished: レスポンス情報の取得に失敗: ${request.url()}`, e instanceof Error ? e.message : e)
       }
     })
 
@@ -432,8 +430,10 @@ export class TestHelpers {
       try {
         const response = await request.response()
         if (response) { status = response.status() }
-      } catch {}
-      
+      } catch (e) {
+        console.warn(`⚠️ requestfailed: レスポンス情報の取得に失敗: ${url}`, e instanceof Error ? e.message : e)
+      }
+
       if ((status && status >= 400) || errorText) {
         if (!this.shouldIgnoreError(`${url} status=${status} ${errorText}`, url)) {
           errorDump.push({
@@ -507,7 +507,7 @@ export class TestHelpers {
    */
   async clickWithRetry(locator: Locator, maxRetries: number = 3): Promise<void> {
     console.log(`🖱️ 要素をクリック中: ${locator}`)
-    
+
     for (let i = 0; i < maxRetries; i++) {
       try {
         await locator.waitFor({ state: 'visible', timeout: 5000 })
@@ -519,7 +519,7 @@ export class TestHelpers {
         if (i === maxRetries - 1) {
           throw new Error(`❌ ${maxRetries}回の試行後もクリックに失敗しました: ${locator}`)
         }
-        await this.page.waitForTimeout(1000) // 1秒待機してリトライ
+        // Playwrightの自動待機機能により、次の試行で自動的に待機される
       }
     }
   }
@@ -539,7 +539,7 @@ export class TestHelpers {
     maxRetries: number = 3
   ): Promise<void> {
     console.log(`🖱️ 段階的戦略で要素をクリック中...`)
-    
+
     for (let i = 0; i < maxRetries; i++) {
       try {
         const locator = await this.findWithFallback(strategies, 5000)
@@ -551,7 +551,7 @@ export class TestHelpers {
         if (i === maxRetries - 1) {
           throw new Error(`❌ ${maxRetries}回の試行後もクリックに失敗しました`)
         }
-        await this.page.waitForTimeout(1000) // 1秒待機してリトライ
+        // Playwrightの自動待機機能により、次の試行で自動的に待機される
       }
     }
   }
@@ -595,36 +595,6 @@ export class TestHelpers {
     console.log(`✅ テキスト入力が完了しました: ${text}`)
   }
 
-  /**
-   * ページ内のリンク確認
-   * 
-   * @param maxLinks チェックするリンクの最大数
-   * @returns リンク検証結果
-   * @description
-   * - aタグのリンク先が有効か簡易チェック
-   * - 外部/内部リンクの死活監視やリンク切れ検出に利用
-   */
-  async verifyLinks(maxLinks: number = 10): Promise<{ working: number; broken: number }> {
-    console.log('🔗 ページ内のリンクを確認中...')
-    
-    const links = await this.page.locator('a[href]').all()
-    let working = 0
-    let broken = 0
-
-    for (const link of links.slice(0, maxLinks)) {
-      try {
-        const href = await link.getAttribute('href')
-        if (href && (href.startsWith('http') || href.startsWith('/'))) {
-          working++
-        }
-      } catch (error) {
-        broken++
-      }
-    }
-
-    console.log(`✅ リンク確認完了: ${working}個有効, ${broken}個無効`)
-    return { working, broken }
-  }
 
   /**
    * ページのパフォーマンス情報取得
@@ -721,9 +691,6 @@ export class TestHelpers {
       }
     })
 
-    // 安定化のための待機
-    await this.page.waitForTimeout(2000)
-    
     try {
       await expect(this.page).toHaveScreenshot(`${name}.png`, {
         fullPage: true,

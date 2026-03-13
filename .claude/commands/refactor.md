@@ -1,108 +1,112 @@
-MablからPlaywrightへのE2Eテストリファクタリングを開始します。
+MablからPlaywrightへのE2Eテストリファクタリングエージェントを起動します。
 
-CLAUDE.mdに記載された以下のフローに従って作業を進めてください：
+## 使い方
 
-## STEP 1: 現状確認・準備
-
-まず、以下の情報を作業者に確認してください：
-
-### 基本情報の収集
-1. **対象サービス名**: リファクタリング対象のサービス名
-2. **Mablテストファイル**: testcase/配下のファイルパス
-3. **環境セットアップ状況**:
-   - Playwright・dotenvのインストール状況
-   - .envファイルの設定状況（LOGIN_ID, PASSWORD等）
-   - テスト実行環境の準備状況
-
-### 必要情報の収集
-以下の情報を作業者から収集し、`.claude/services/service-[サービス名]-specs.md` として整理してください：
-
-- **システム情報**: URL、認証方式、権限、ブラウザ対応
-- **アカウント情報**: テストユーザー、権限レベル、データ制約
-- **技術要件**: CI/CD環境、実行環境、並列実行、外部依存
-- **既存テスト**: 実行状況、不安定要素、カバレッジ、メンテナンス状況
-
-### HTML構造の事前取得（最重要）
-Mablテストファイルを読み取り、訪問する全ページを特定した上で、作業者に以下を依頼してください：
-
-```
-以下のページのHTML構造を取得し、tmp/フォルダに保存してください：
-1. [ページ名] - [URL] → tmp/[サービス名]_[ページ名].html
-2. ...
+```bash
+/refactor <Mablテストファイルパス>
 ```
 
-## STEP 2: Mablテスト簡易修正
+例：
+```bash
+/refactor testcase/test-1.spec.ts
+```
 
-### 段階的アプローチの実施
+## 機能
 
-#### Phase A: 現状把握
-1. 取得したHTML構造を確認
-2. backup版の未定義変数のみ最小修正（セレクタは元のXPathのまま維持）
-3. 修正版を実行して現状分析
-4. 取得済みHTML構造と照合して問題点特定
+refactor-agentが以下のステップを自律的に実行します：
 
-#### Phase B: 小単位修正
-1. ログイン〜ホーム画面など最小単位で修正
-2. 各修正後に動作確認（部分実行）
-3. 成功を確認してから次のステップへ
+### STEP 1: 現状確認・準備
+- Mablテストファイルの分析
+- サービス情報の収集
+- 訪問ページの特定とHTML取得（Playwright MCP使用）
+- サービス仕様ファイルの作成（`.claude/services/`配下）
 
-#### Phase C: 段階的拡張
-1. 動作確認済み部分を基盤に範囲拡大
-2. 新しい問題と既存問題の明確な区別
-3. 修正効果の測定可能性確保
+### STEP 2: Mablテスト簡易修正
+- 段階的アプローチによる修正
+- 動作確認と問題点の特定
+- 元のMablテストの実行成功を確認
 
-**STEP 2完了条件**: 元のMablテストが最後まで実行成功すること
+⚠️ **元のテストが動作しない場合は、リファクタリングを開始せず、まず元のテストを修正すること**
 
-## STEP 3: 本格リファクタリング
+### STEP 3: 本格リファクタリング
+- **Page Object Modelパターンの適用**
+  - コンストラクタでのreadonly Locator初期化
+- **役割ベースセレクタへの変換**
+  - getByTestId > getByRole > getByLabel > locator('#id') > getByText
+- **test.step構造化**
+  - テストを論理的なステップに分割
+  - 失敗箇所の特定を容易にする
+- **StorageState認証パターンの実装**
+  - globalSetup: testcase/auth.setup.tsでの1回のみのログイン処理
+  - storageState: 認証状態の再利用
+- **テストケースの変換**
+  - 命名規則: `C[ID]_[説明]`
+  - テストコード内でconsole.log禁止
+  - マジックタイムアウト禁止
+  - URL直書き禁止（baseURL活用）
+- **README.md作成**
 
-### Phase 1: Mablシナリオ分析とHTML取得
-- シナリオ読み取り：Mablテストの動作とページ遷移を把握
-- URL調査：遷移先URLの確認と既存Page Objectの有無をチェック
-- セレクタ調査：取得したHTMLを基に役割ベースのセレクタ（getByRole、getByLabel等）を特定
+## 注意事項
 
-### Phase 2: 基盤構築（ドメイン別フォルダ構造）
-- フォルダ構造作成：`src/{domain}/` 形式での複数ドメイン対応構造
-- BasePage設計：レスポンシブ対応・循環参照対策を含む基底クラス
-- 設定ファイル：playwright.config.ts（企業環境・グローバルセットアップ対応）
+- 各ステップでagentが作業者に確認・質問を行います
+- HTML取得が必要な場合、Playwright MCPがあれば自動取得を試みます
+- 問題発生時は作業者と協議しながら進めます
 
-### Phase 3: データ層・ユーティリティ構築
-- 型定義作成：`tests/data/types.d.ts` での型安全性確保
-- ユーティリティ：アカウント生成・フォーマット処理等
-- テストデータ：外部化されたテストデータ管理
+## 標準パターン
 
-### Phase 4: Helper層設計・実装（段階的廃止予定）
-⚠️ 注意：Helperクラスは将来的に廃止予定です。新規実装や利用は避け、必要な処理はPage Objectに実装してください。
+### Page Object Locator初期化
+```typescript
+// ✅ 推奨：コンストラクタでreadonly初期化
+export class ExamplePage {
+  readonly page: Page
+  readonly submitButton: Locator
 
-### Phase 5: Page Object作成
-- 基底Page Object：BasePage継承による共通機能
-- 主要ページ：ログイン→ホーム→主要機能ページ
-- 詳細ページ：機能別の詳細ページ群
+  constructor(page: Page) {
+    this.page = page
+    this.submitButton = page.getByRole('button', { name: '送信' })
+  }
+}
+```
 
-### Phase 6: テストケース変換
-- デバイス別対応：タグベーステストでの実行制御
-- 段階的変換：単純→複雑→統合テストの順序
+### test.step構造化
+```typescript
+test('C001_ログイン成功', async ({ page }) => {
+  await test.step('ログインページにアクセス', async () => {
+    await page.goto('/login')
+  })
 
-## 重要な原則
+  await test.step('認証情報を入力してログイン', async () => {
+    await loginPage.performLogin(credentials)
+  })
 
-### リファクタリングの原則
-- **既存テストの忠実な再現**: 新機能追加ではなく変換が目的
-- **役割ベースセレクタの優先使用**: getByRole、getByLabel、getByPlaceholder、getByTextを優先
-- **段階的セレクタ戦略**: 役割ベース → data-testid → CSSセレクタのフォールバック対応
-- **複数サービスエリア対応**: 頑健なアサーションによる慎重な要素特定
-- **URL遷移時のwaitUntil設定**: `waitUntil: 'domcontentloaded'`を明示的に指定（networkidleやloadは避ける）
+  await test.step('ログイン成功を確認', async () => {
+    await expect(page).toHaveURL('/dashboard')
+  })
+})
+```
 
-### コーディング規約
-- **すべて日本語**: コメント、データ、ログ出力、エラーメッセージは日本語で記述
-- **JSDocコメント**: クラス・メソッドには機能説明・実装理由・注意事項を日本語で記述
-- **AAA構造**: Arrange（準備）/ Action（実行）/ Assert（検証）に基づいたコードブロック
-- **分岐の最小化**: テストコード内でif・switchによる分岐は限りなくゼロにする
+### StorageState認証
+```typescript
+// playwright.config.ts
+export default defineConfig({
+  testDir: './testcase',
+  globalSetup: require.resolve('./testcase/auth.setup.ts'),
+  use: {
+    baseURL: process.env.BASE_URL || 'https://www.m3.com',
+    storageState: path.join(__dirname, 'testcase/.auth/user.json'),
+  },
+})
+```
 
-## 作業の進め方
+## 品質チェックリスト
 
-各ステップで作業者と対話しながら進めてください：
-1. 情報収集→確認→次のステップへ進む判断
-2. 問題発生時は立ち止まり、作業者と解決策を協議
-3. 各Phaseの完了時にテスト実行で動作確認
-4. 最終的にREADME.md作成（リファクタリング対応表を含む）
-
-それでは、STEP 1から始めましょう。対象サービス名とMablテストファイルのパスを教えてください。
+- [ ] 全テストケースがパスする
+- [ ] Page Objectが適切に分離されている
+- [ ] セレクタが役割ベースになっている
+- [ ] test.stepで構造化されている
+- [ ] テストコード内にconsole.logがない
+- [ ] マジックタイムアウトがない
+- [ ] URL直書きがない
+- [ ] storageStateで認証が再利用されている
+- [ ] ファイル末尾に空行がある
+- [ ] README.mdが作成されている

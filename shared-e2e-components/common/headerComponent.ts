@@ -1,8 +1,8 @@
-import { Page, Locator, expect } from '@playwright/test'
+import { Page, Locator } from '@playwright/test'
 
 /**
  * M3サービス群共通ヘッダーコンポーネント
- * 
+ *
  * @description
  * - M3.comの共通ヘッダー（Atlas）とサービス固有ヘッダーの両方に対応
  * - **役割ベースセレクタを優先**した要素選択戦略を採用
@@ -11,299 +11,155 @@ import { Page, Locator, expect } from '@playwright/test'
  * - PC/SP両対応で画面サイズに応じた要素の取得が可能
  * - ポイント情報、サービス固有アイコンなど汎用的な要素を管理
  * - アクセシビリティを重視したWAI-ARIA準拠の要素特定
- * 
+ *
+ * ## Playwright推奨パターンに準拠
+ * - コンストラクタで全Locatorをreadonly propertyとして一括初期化
+ * - パフォーマンス向上：要素参照が固定され、毎回の評価が不要
+ * - 可読性向上：プロパティとして明示的に定義
+ * - 型安全性：TypeScriptによる厳格な型チェック
+ *
  * ## セレクタ選択の改善点
  * - **アクセシビリティ重視**: WAI-ARIAの役割、ラベル、alt属性を優先
  * - **段階的フォールバック**: 役割ベース → data-testid → CSSセレクタの順で試行
  * - **保守性向上**: セマンティックな意味に基づく要素特定で変更に強い実装
  */
 export class HeaderComponent {
-  private page: Page
+  readonly page: Page
+
+  // Atlas ヘッダー要素
+  readonly atlasHeader: Locator
+  readonly userName: Locator
+  readonly userInfoBox: Locator
+  readonly memberStatus: Locator
+
+  // ポイント・アクション情報関連
+  readonly pointInfo: Locator
+  readonly pointAmount: Locator
+  readonly actionInfo: Locator
+  readonly actionAmount: Locator
+
+  // サービスアイコン群
+  readonly serviceDetail: Locator
+  readonly messagesBadge: Locator
+  readonly serviceConference: Locator
+  readonly serviceSurvey: Locator
+  readonly serviceCampaign: Locator
+  readonly serviceTodo: Locator
+  readonly todoBadge: Locator
+
+  // 検索機能
+  readonly searchArea: Locator
 
   constructor(page: Page) {
     this.page = page
-  }
 
-
-  /**
-   * Atlas ヘッダー全体（役割ベースセレクタ対応）
-   * メインヘッダーコンテナ
-   */
-  get atlasHeader(): Locator {
-    // 段階的セレクタ戦略：banner役割 → CSSセレクタ
-    try {
-      return this.page.getByRole('banner')
-    } catch {
-      return this.page.locator('.atlas-header')
-    }
-  }
-
-  /**
-   * ユーザー名表示要素（M3共通）（役割ベースセレクタ対応）
-   * ログイン成功確認とユーザー情報表示に使用
-   */
-  get userName(): Locator {
-    // 段階的セレクタ戦略：banner内のbutton役割 → CSSセレクタ
-    const strategies = [
-      () => this.page.getByRole('banner').getByRole('button', { name: /先生|さん/ }),
-      () => this.page.getByRole('button', { name: /先生|さん/ }),
-      () => this.page.locator('.atlas-header__username')
-    ]
-    
-    for (const strategy of strategies) {
-      try {
-        return strategy()
-      } catch {
-        continue
+    // ヘルパー関数：段階的セレクタ戦略を実行
+    const trySelectors = (strategies: (() => Locator)[]): Locator => {
+      for (const strategy of strategies) {
+        try {
+          return strategy()
+        } catch {
+          continue
+        }
       }
+      // 全ての戦略が失敗した場合、最後の戦略を返す
+      return strategies[strategies.length - 1]()
     }
-    return this.page.locator('.atlas-header__username')
-  }
 
-  /**
-   * ユーザー情報ドロップダウンエリア（役割ベースセレクタ対応）
-   * ユーザー名クリック時に表示される情報ボックス
-   */
-  get userInfoBox(): Locator {
-    // 段階的セレクタ戦略：menu役割 → CSSセレクタ
-    const strategies = [
-      () => this.page.getByRole('menu'),
-      () => this.page.locator('[role="menu"]'),
-      () => this.page.locator('.atlas-header__infobox')
-    ]
-    
-    for (const strategy of strategies) {
-      try {
-        return strategy()
-      } catch {
-        continue
-      }
-    }
-    return this.page.locator('.atlas-header__infobox')
-  }
+    // Atlas ヘッダー全体（役割ベースセレクタ対応）
+    // 注: M3.comのヘッダーにはrole="banner"が設定されていないため、
+    // 他の要素で代替（heading "m3.com"の存在で確認）
+    this.atlasHeader = page.getByRole('heading', { name: 'm3.com', level: 1 })
 
-  /**
-   * 会員ステータス表示（役割ベースセレクタ対応）
-   * （ブロンズ会員、シルバー会員等）
-   */
-  get memberStatus(): Locator {
-    // 段階的セレクタ戦略：テキストベース → CSSセレクタ
-    const strategies = [
-      () => this.page.getByText(/ブロンズ会員|シルバー会員|ゴールド会員|プラチナ会員/).first(),
-      () => this.page.locator('.atlas-header__point__status').first()
-    ]
-    
-    for (const strategy of strategies) {
-      try {
-        return strategy()
-      } catch {
-        continue
-      }
-    }
-    return this.page.locator('.atlas-header__point__status').first()
-  }
+    // ユーザー名表示要素（M3共通）（役割ベースセレクタ対応）
+    // 注: banner内ではなく、ページ全体から検索
+    this.userName = trySelectors([
+      () => page.getByRole('button', { name: /先生|さん/ }),
+      () => page.locator('.atlas-header__username'),
+      () => page.locator('.atlas-header__name')
+    ])
 
-  // ポイント・アクション情報関連
-  
-  /**
-   * ポイント情報エリア全体
-   */
-  get pointInfo(): Locator {
-    return this.page.locator('.atlas-header__point')
-  }
+    // ユーザー情報ドロップダウンエリア（役割ベースセレクタ対応）
+    this.userInfoBox = trySelectors([
+      () => page.getByRole('menu'),
+      () => page.locator('[role="menu"]'),
+      () => page.locator('.atlas-header__infobox')
+    ])
 
-  /**
-   * ポイント数表示（役割ベースセレクタ対応）
-   * 実際のポイント数が表示される要素
-   */
-  get pointAmount(): Locator {
-    // 段階的セレクタ戦略：テキストパターン → CSSセレクタ
-    const strategies = [
-      () => this.page.getByText(/\d+p/),
-      () => this.page.locator('[title="ポイント商品"]').locator('span'),
-      () => this.page.locator('.atlas-header__point__amount')
-    ]
-    
-    for (const strategy of strategies) {
-      try {
-        return strategy()
-      } catch {
-        continue
-      }
-    }
-    return this.page.locator('.atlas-header__point__amount')
-  }
+    // 会員ステータス表示（役割ベースセレクタ対応）
+    this.memberStatus = trySelectors([
+      () => page.getByText(/ブロンズ会員|シルバー会員|ゴールド会員|プラチナ会員/).first(),
+      () => page.locator('.atlas-header__point__status').first()
+    ])
 
-  /**
-   * アクション情報エリア全体
-   */
-  get actionInfo(): Locator {
-    return this.page.locator('.atlas-header__action')
-  }
+    // ポイント情報エリア全体
+    this.pointInfo = page.locator('.atlas-header__point')
 
-  /**
-   * アクション数表示（役割ベースセレクタ対応）
-   * アクションポイント数が表示される要素
-   */
-  get actionAmount(): Locator {
-    // 段階的セレクタ戦略：title属性 → CSSセレクタ
-    const strategies = [
-      () => this.page.locator('[title="アクションとは"]').locator('span').first(),
-      () => this.page.locator('.atlas-header__action .atlas-header__point__status')
-    ]
-    
-    for (const strategy of strategies) {
-      try {
-        return strategy()
-      } catch {
-        continue
-      }
-    }
-    return this.page.locator('.atlas-header__action .atlas-header__point__status')
-  }
+    // ポイント数表示（役割ベースセレクタ対応）
+    this.pointAmount = trySelectors([
+      () => page.getByText(/\d+p/),
+      () => page.locator('[title="ポイント商品"]').locator('span'),
+      () => page.locator('.atlas-header__point__amount')
+    ])
 
-  // サービスアイコン群
+    // アクション情報エリア全体
+    this.actionInfo = page.locator('.atlas-header__action')
 
-  /**
-   * メッセージ・詳細サービスアイコン（役割ベースセレクタ対応）
-   */
-  get serviceDetail(): Locator {
-    // 段階的セレクタ戦略：title属性 → CSSセレクタ
-    const strategies = [
-      () => this.page.locator('[title="未読のメッセージに遷移します"]'),
-      () => this.page.locator('.atlas-header__service-detail')
-    ]
-    
-    for (const strategy of strategies) {
-      try {
-        return strategy()
-      } catch {
-        continue
-      }
-    }
-    return this.page.locator('.atlas-header__service-detail')
-  }
+    // アクション数表示（役割ベースセレクタ対応）
+    this.actionAmount = trySelectors([
+      () => page.locator('[title="アクションとは"]').locator('span').first(),
+      () => page.locator('.atlas-header__action .atlas-header__point__status')
+    ])
 
-  /**
-   * メッセージ未読バッジ
-   */
-  get messagesBadge(): Locator {
-    return this.page.locator('.atlas-header__service-detail .atlas-header__badge')
-  }
+    // メッセージ・詳細サービスアイコン（役割ベースセレクタ対応）
+    this.serviceDetail = trySelectors([
+      () => page.locator('[title="未読のメッセージに遷移します"]'),
+      () => page.locator('.atlas-header__service-detail')
+    ])
 
-  /**
-   * Web講演会サービスアイコン（役割ベースセレクタ対応）
-   */
-  get serviceConference(): Locator {
-    // 段階的セレクタ戦略：title属性 → CSSセレクタ
-    const strategies = [
-      () => this.page.locator('[title="Web講演会"]'),
-      () => this.page.locator('.atlas-header__service-conference')
-    ]
-    
-    for (const strategy of strategies) {
-      try {
-        return strategy()
-      } catch {
-        continue
-      }
-    }
-    return this.page.locator('.atlas-header__service-conference')
-  }
+    // メッセージ未読バッジ
+    this.messagesBadge = page.locator('.atlas-header__service-detail .atlas-header__badge')
 
-  /**
-   * アンケートサービスアイコン（役割ベースセレクタ対応）
-   */
-  get serviceSurvey(): Locator {
-    // 段階的セレクタ戦略：title属性 → CSSセレクタ
-    const strategies = [
-      () => this.page.locator('[title="アンケート"]'),
-      () => this.page.locator('.atlas-header__service-survey')
-    ]
-    
-    for (const strategy of strategies) {
-      try {
-        return strategy()
-      } catch {
-        continue
-      }
-    }
-    return this.page.locator('.atlas-header__service-survey')
-  }
+    // Web講演会サービスアイコン（役割ベースセレクタ対応）
+    this.serviceConference = trySelectors([
+      () => page.locator('[title="Web講演会"]'),
+      () => page.locator('.atlas-header__service-conference')
+    ])
 
-  /**
-   * キャンペーンサービスアイコン（役割ベースセレクタ対応）
-   */
-  get serviceCampaign(): Locator {
-    // 段階的セレクタ戦略：title属性 → CSSセレクタ
-    const strategies = [
-      () => this.page.locator('[title="キャンペーン"]'),
-      () => this.page.locator('.atlas-header__service-campaign')
-    ]
-    
-    for (const strategy of strategies) {
-      try {
-        return strategy()
-      } catch {
-        continue
-      }
-    }
-    return this.page.locator('.atlas-header__service-campaign')
-  }
+    // アンケートサービスアイコン（役割ベースセレクタ対応）
+    this.serviceSurvey = trySelectors([
+      () => page.locator('[title="アンケート"]'),
+      () => page.locator('.atlas-header__service-survey')
+    ])
 
-  /**
-   * ToDoサービスアイコン（役割ベースセレクタ対応）
-   */
-  get serviceTodo(): Locator {
-    // 段階的セレクタ戦略：title属性 → CSSセレクタ
-    const strategies = [
-      () => this.page.locator('[title="ToDo"]'),
-      () => this.page.locator('.atlas-header__service-todo')
-    ]
-    
-    for (const strategy of strategies) {
-      try {
-        return strategy()
-      } catch {
-        continue
-      }
-    }
-    return this.page.locator('.atlas-header__service-todo')
-  }
+    // キャンペーンサービスアイコン（役割ベースセレクタ対応）
+    this.serviceCampaign = trySelectors([
+      () => page.locator('[title="キャンペーン"]'),
+      () => page.locator('.atlas-header__service-campaign')
+    ])
 
-  /**
-   * ToDoバッジ
-   */
-  get todoBadge(): Locator {
-    return this.page.locator('.atlas-header__service-todo .atlas-header__badge')
-  }
+    // ToDoサービスアイコン（役割ベースセレクタ対応）
+    this.serviceTodo = trySelectors([
+      () => page.locator('[title="ToDo"]'),
+      () => page.locator('.atlas-header__service-todo')
+    ])
 
-  /**
-   * 検索機能（役割ベースセレクタ対応）
-   */
-  get searchArea(): Locator {
-    // 段階的セレクタ戦略：search役割 → CSSセレクタ
-    const strategies = [
-      () => this.page.getByRole('search'),
-      () => this.page.getByRole('button', { name: /検索/ }),
-      () => this.page.locator('.atlas-header__search')
-    ]
-    
-    for (const strategy of strategies) {
-      try {
-        return strategy()
-      } catch {
-        continue
-      }
-    }
-    return this.page.locator('.atlas-header__search')
+    // ToDoバッジ
+    this.todoBadge = page.locator('.atlas-header__service-todo .atlas-header__badge')
+
+    // 検索機能（役割ベースセレクタ対応）
+    this.searchArea = trySelectors([
+      () => page.getByRole('search'),
+      () => page.getByRole('button', { name: /検索/ }),
+      () => page.locator('.atlas-header__search')
+    ])
   }
 
   // 便利メソッド群
 
   /**
    * Atlas ヘッダーの表示確認
-   * 
+   *
    * @param timeout タイムアウト時間（ミリ秒）
    * @returns ヘッダーが表示されている場合true
    */
@@ -311,90 +167,66 @@ export class HeaderComponent {
     try {
       await this.atlasHeader.waitFor({ state: 'visible', timeout })
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       return false
     }
   }
 
   /**
    * ログイン状態の確認（役割ベースセレクタ対応）
-   * 
+   *
    * @param timeout タイムアウト時間（ミリ秒）
    * @returns ログイン済みの場合true
    * @description
-   * 段階的セレクタ戦略でユーザー名要素の表示でログイン状態を判定
+   * ユーザー名要素の表示でログイン状態を判定
    */
   async isLoggedIn(timeout: number = 5000): Promise<boolean> {
     console.log('🔍 ログイン状態を確認中...')
-    
-    // 段階的セレクタ戦略でユーザー名要素を特定
-    const loginStrategies = [
-      () => this.page.getByRole('banner').getByRole('button', { name: /先生|さん/ }),
-      () => this.page.getByRole('button', { name: /先生|さん/ }),
-      () => this.page.locator('.atlas-header__username')
-    ]
-    
-    for (let i = 0; i < loginStrategies.length; i++) {
-      try {
-        const strategy = loginStrategies[i]
-        const element = strategy()
-        await element.waitFor({ state: 'visible', timeout: Math.floor(timeout / loginStrategies.length) })
-        
-        const usernameText = await element.textContent()
-        if (usernameText && usernameText.trim()) {
-          console.log(`✅ ログイン状態確認成功（戦略 ${i + 1}/${loginStrategies.length}）: ${usernameText.trim()}`)
-          return true
-        }
-      } catch (error) {
-        console.log(`  戦略 ${i + 1} 失敗: ${error.message}`)
-        continue
+
+    try {
+      await this.userName.waitFor({ state: 'visible', timeout })
+      const usernameText = await this.userName.textContent()
+
+      if (usernameText && usernameText.trim()) {
+        console.log(`✅ ログイン状態確認成功: ${usernameText.trim()}`)
+        return true
       }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.log(`⚠️ ログイン状態を確認できませんでした: ${errorMessage}`)
     }
-    
-    console.log('⚠️ ログイン状態を確認できませんでした')
+
     return false
   }
 
   /**
    * ユーザー名の取得（役割ベースセレクタ対応）
-   * 
+   *
    * @param timeout タイムアウト時間（ミリ秒）
    * @returns ユーザー名（取得できない場合は空文字）
    */
   async getUserName(timeout: number = 5000): Promise<string> {
     console.log('📝 ユーザー名を取得中...')
-    
-    // 段階的セレクタ戦略でユーザー名を取得
-    const usernameStrategies = [
-      () => this.page.getByRole('banner').getByRole('button', { name: /先生|さん/ }),
-      () => this.page.getByRole('button', { name: /先生|さん/ }),
-      () => this.page.locator('.atlas-header__username')
-    ]
-    
-    for (let i = 0; i < usernameStrategies.length; i++) {
-      try {
-        const strategy = usernameStrategies[i]
-        const element = strategy()
-        await element.waitFor({ state: 'visible', timeout: Math.floor(timeout / usernameStrategies.length) })
-        
-        const text = await element.textContent()
-        if (text && text.trim()) {
-          console.log(`✅ ユーザー名取得成功（戦略 ${i + 1}/${usernameStrategies.length}）: ${text.trim()}`)
-          return text.trim()
-        }
-      } catch (error) {
-        console.log(`  戦略 ${i + 1} 失敗: ${error.message}`)
-        continue
+
+    try {
+      await this.userName.waitFor({ state: 'visible', timeout })
+      const text = await this.userName.textContent()
+
+      if (text && text.trim()) {
+        console.log(`✅ ユーザー名取得成功: ${text.trim()}`)
+        return text.trim()
       }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.log(`⚠️ ユーザー名を取得できませんでした: ${errorMessage}`)
     }
-    
-    console.log('⚠️ ユーザー名を取得できませんでした')
+
     return ''
   }
 
   /**
    * ポイント数の取得
-   * 
+   *
    * @param timeout タイムアウト時間（ミリ秒）
    * @returns ポイント数（取得できない場合は0）
    */
@@ -404,14 +236,14 @@ export class HeaderComponent {
       const text = await this.pointAmount.textContent()
       const match = text?.match(/(\d+)/)
       return match ? parseInt(match[1], 10) : 0
-    } catch (error) {
+    } catch (error: unknown) {
       return 0
     }
   }
 
   /**
    * アクション数の取得
-   * 
+   *
    * @param timeout タイムアウト時間（ミリ秒）
    * @returns アクション数（取得できない場合は0）
    */
@@ -421,14 +253,14 @@ export class HeaderComponent {
       const text = await this.actionAmount.textContent()
       const match = text?.match(/(\d+)/)
       return match ? parseInt(match[1], 10) : 0
-    } catch (error) {
+    } catch (error: unknown) {
       return 0
     }
   }
 
   /**
    * 会員ステータスの取得
-   * 
+   *
    * @param timeout タイムアウト時間（ミリ秒）
    * @returns 会員ステータス（取得できない場合は空文字）
    */
@@ -437,14 +269,14 @@ export class HeaderComponent {
       await this.memberStatus.waitFor({ state: 'visible', timeout })
       const text = await this.memberStatus.textContent()
       return text?.trim() || ''
-    } catch (error) {
+    } catch (error: unknown) {
       return ''
     }
   }
 
   /**
    * サービスアイコンのクリック
-   * 
+   *
    * @param serviceType サービスの種類
    */
   async clickServiceIcon(serviceType: 'detail' | 'conference' | 'survey' | 'campaign' | 'todo'): Promise<void> {
@@ -478,7 +310,7 @@ export class HeaderComponent {
 
   /**
    * 未読メッセージ数の取得
-   * 
+   *
    * @param timeout タイムアウト時間（ミリ秒）
    * @returns 未読メッセージ数（取得できない場合は0）
    */
@@ -488,14 +320,14 @@ export class HeaderComponent {
       const text = await this.messagesBadge.textContent()
       const match = text?.match(/(\d+)/)
       return match ? parseInt(match[1], 10) : 0
-    } catch (error) {
+    } catch (error: unknown) {
       return 0
     }
   }
 
   /**
    * ToDo状態の取得
-   * 
+   *
    * @param timeout タイムアウト時間（ミリ秒）
    * @returns ToDoバッジのテキスト（取得できない場合は空文字）
    */
@@ -504,61 +336,74 @@ export class HeaderComponent {
       await this.todoBadge.waitFor({ state: 'visible', timeout })
       const text = await this.todoBadge.textContent()
       return text?.trim() || ''
-    } catch (error) {
+    } catch (error: unknown) {
       return ''
     }
   }
 }
 
 /**
- * HeaderComponentクラス - 役割ベースセレクタ対応ガイド
- * 
- * このクラスは全面的に役割ベースセレクタを採用し、CLAUDE.mdの方針に準拠しています。
- * 
- * ## 改善されたセレクタ戦略
- * 
- * ### 1. ユーザー情報要素
+ * HeaderComponentクラス - Playwright推奨パターンに準拠
+ *
+ * このクラスはPlaywrightの公式Page Object Modelパターンに準拠し、
+ * 役割ベースセレクタを採用した堅牢な実装となっています。
+ *
+ * ## Playwright推奨パターンの採用
+ *
+ * ### コンストラクタでの一括初期化
  * ```typescript
- * // 従来: this.page.locator('.atlas-header__username')
- * // 改善後: this.page.getByRole('banner').getByRole('button', { name: /先生|さん/ })
- * //         フォールバック: CSSセレクタ
+ * constructor(page: Page) {
+ *   this.page = page;
+ *   this.userName = page.getByRole('button', { name: /先生|さん/ });
+ *   // 全てのLocatorをコンストラクタで初期化
+ * }
  * ```
- * 
- * ### 2. サービスアイコン
+ *
+ * ### 利点
+ * - **パフォーマンス向上**: Locatorが初期化時に一度だけ評価される
+ * - **可読性向上**: プロパティとして明示的に定義され、コード補完が効く
+ * - **型安全性**: TypeScriptの型チェックが厳格に機能
+ * - **保守性向上**: 要素定義が一箇所に集約され、変更が容易
+ *
+ * ## 段階的セレクタ戦略
+ *
+ * ### trySelectorsヘルパー関数
  * ```typescript
- * // 従来: this.page.locator('.atlas-header__service-todo')
- * // 改善後: this.page.locator('[title="ToDo"]')
- * //         フォールバック: CSSセレクタ
+ * const trySelectors = (strategies: (() => Locator)[]): Locator => {
+ *   for (const strategy of strategies) {
+ *     try {
+ *       return strategy()
+ *     } catch {
+ *       continue
+ *     }
+ *   }
+ *   return strategies[strategies.length - 1]()
+ * }
  * ```
- * 
- * ### 3. 検索機能
- * ```typescript
- * // 従来: this.page.locator('.atlas-header__search')
- * // 改善後: this.page.getByRole('search')
- * //         this.page.getByRole('button', { name: /検索/ })
- * //         フォールバック: CSSセレクタ
- * ```
- * 
- * ## 利点
- * 
- * - **安定性向上**: UI変更に対して役割ベースセレクタは最も安定
- * - **可読性向上**: 何を操作しているか明確
- * - **アクセシビリティ**: スクリーンリーダー等と同じ要素特定方法
- * - **保守性向上**: セマンティックな意味に基づくため変更に強い
- * - **フォールバック対応**: 複数戦略で堅牢性を確保
- * 
+ *
+ * ### セレクタ優先順位
+ * 1. **役割ベース**: `getByRole()`, `getByLabel()`, `getByText()`
+ * 2. **属性ベース**: `[title="..."]`, `[data-testid="..."]`
+ * 3. **CSSセレクタ**: `.class-name`（最後の手段）
+ *
  * ## 使用例
- * 
+ *
  * ```typescript
- * const header = new HeaderComponent(page);
- * 
- * // ログイン状態確認（段階的戦略自動適用）
- * const isLoggedIn = await header.isLoggedIn();
- * 
- * // ユーザー名取得（段階的戦略自動適用）
- * const username = await header.getUserName();
- * 
- * // サービスアイコンクリック（title属性ベース）
- * await header.clickServiceIcon('todo');
+ * import { HeaderComponent } from '@/shared-e2e-components/common/headerComponent';
+ *
+ * test('ヘッダー要素の検証', async ({ page }) => {
+ *   const header = new HeaderComponent(page);
+ *
+ *   // ログイン状態確認
+ *   const isLoggedIn = await header.isLoggedIn();
+ *   expect(isLoggedIn).toBe(true);
+ *
+ *   // ユーザー名取得
+ *   const username = await header.getUserName();
+ *   console.log(`ログインユーザー: ${username}`);
+ *
+ *   // サービスアイコンクリック
+ *   await header.clickServiceIcon('todo');
+ * });
  * ```
  */

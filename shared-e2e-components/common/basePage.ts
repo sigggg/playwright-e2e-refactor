@@ -2,15 +2,34 @@ import { Page, expect, Locator } from '@playwright/test'
 
 /**
  * 全てのPage Objectクラスが継承する基底クラス
- * 
+ *
  * @description
  * - M3サービス群で共通利用される基本機能を提供
  * - ページ操作、要素検証、エラーハンドリングなどの共通処理を集約
  * - 各サービス固有のPage Objectはこのクラスを継承して拡張
  * - 堅牢な待機処理とリトライ機能を内蔵
+ *
+ * ## Playwright推奨パターンに準拠
+ * - このクラスはユーティリティメソッドを提供する基底クラス
+ * - 各Page Objectは固有のLocatorをreadonlyプロパティとしてコンストラクタで初期化
+ * - 共通操作メソッドを提供し、DRY原則を維持
+ *
+ * ## 使用例
+ * ```typescript
+ * export class LoginPage extends BasePage {
+ *   readonly loginButton: Locator;
+ *   readonly emailField: Locator;
+ *
+ *   constructor(page: Page) {
+ *     super(page);
+ *     this.loginButton = page.getByRole('button', { name: 'ログイン' });
+ *     this.emailField = page.getByLabel('メールアドレス');
+ *   }
+ * }
+ * ```
  */
 export abstract class BasePage {
-  protected page: Page
+  protected readonly page: Page
   protected url?: string
 
   constructor(page: Page) {
@@ -19,7 +38,7 @@ export abstract class BasePage {
 
   /**
    * ページへのナビゲーション
-   * 
+   *
    * @param url 遷移先URL（省略時はクラス定義のURLを使用）
    * @param options ナビゲーションオプション
    */
@@ -31,7 +50,7 @@ export abstract class BasePage {
 
     console.log(`📡 ${targetUrl} にナビゲート中...`)
     await this.page.goto(targetUrl, {
-      waitUntil: options?.waitUntil || 'networkidle',
+      waitUntil: options?.waitUntil || 'domcontentloaded',
       timeout: 60000
     })
     console.log(`✅ ${targetUrl} への遷移が完了しました`)
@@ -39,19 +58,17 @@ export abstract class BasePage {
 
   /**
    * ページの読み込み完了を待機
-   * 
+   *
    * @param timeout タイムアウト時間（ミリ秒）
    */
   async waitForPageLoad(timeout: number = 30000): Promise<void> {
     console.log('⏳ ページの読み込み完了を待機中...')
     try {
-      await this.page.waitForLoadState('networkidle', { timeout })
       await this.page.waitForLoadState('domcontentloaded', { timeout })
-      // 安定化のための追加待機
-      await this.page.waitForTimeout(1000)
       console.log('✅ ページの読み込みが完了しました')
-    } catch (error) {
-      console.warn(`⚠️ ページ読み込みタイムアウトが発生しましたが、テストを続行します: ${error.message}`)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.warn(`⚠️ ページ読み込みタイムアウトが発生しましたが、テストを続行します: ${errorMessage}`)
     }
   }
 
@@ -75,19 +92,20 @@ export abstract class BasePage {
    */
   async clickWithRetry(locator: Locator, maxRetries: number = 3): Promise<void> {
     console.log(`🖱️ 要素をクリック中: ${locator}`)
-    
+
     for (let i = 0; i < maxRetries; i++) {
       try {
         await locator.waitFor({ state: 'visible', timeout: 5000 })
         await locator.click()
         console.log(`✅ 要素のクリックが成功しました: ${locator}`)
         return
-      } catch (error) {
-        console.warn(`⚠️ クリック試行 ${i + 1} 回目が失敗: ${error.message}`)
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.warn(`⚠️ クリック試行 ${i + 1} 回目が失敗: ${errorMessage}`)
         if (i === maxRetries - 1) {
           throw new Error(`❌ ${maxRetries}回の試行後もクリックに失敗しました: ${locator}`)
         }
-        await this.page.waitForTimeout(1000) // 1秒待機してリトライ
+        // Playwrightの自動待機機能により、次の試行で自動的に待機される
       }
     }
   }
@@ -145,7 +163,7 @@ export abstract class BasePage {
     try {
       await locator.waitFor({ state: 'visible', timeout })
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       return false
     }
   }
@@ -161,7 +179,7 @@ export abstract class BasePage {
     try {
       await locator.waitFor({ state: 'hidden', timeout })
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       return false
     }
   }
@@ -248,18 +266,14 @@ export abstract class BasePage {
 
   /**
    * URLの検証
-   * 
+   *
    * @param expectedUrl 期待するURL（部分一致可能）
    */
   async verifyUrl(expectedUrl: string | RegExp): Promise<void> {
     console.log(`🔍 URLを検証中: ${expectedUrl}`)
-    
-    if (typeof expectedUrl === 'string') {
-      expect(this.page.url()).toContain(expectedUrl)
-    } else {
-      expect(this.page.url()).toMatch(expectedUrl)
-    }
-    
+
+    await expect(this.page).toHaveURL(expectedUrl)
+
     console.log(`✅ URLの検証が完了しました: ${expectedUrl}`)
   }
 
@@ -296,7 +310,7 @@ export abstract class BasePage {
             }
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         // エラーが見つからない場合は続行
       }
     }

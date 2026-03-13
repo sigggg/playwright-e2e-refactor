@@ -115,27 +115,31 @@ VSCode内で  `Cmd+Shift+X` を押し、「Playwright」を検索して **Playwr
 
 #### Step 5: Playwright MCP サーバーのインストール（オプション）
 
-**HTML自動取得機能を使いたい場合**は、以下をインストールしてください：
+**HTML自動取得機能を使いたい場合**は、以下のコマンドでインストールしてください：
 
 ```bash
-npm install -g @executeautomation/playwright-mcp-server
+# Playwright MCPサーバーを追加
+claude mcp add playwright npx @executeautomation/playwright-mcp-server
 ```
 
-Claude Code設定ファイルに追加：
+このコマンドにより、`.mcp.json`ファイルが自動的に作成/更新されます。
+
+**Claude Codeの再起動**
+
+設定を反映させるため、Claude Codeを再起動してください：
 
 ```bash
-# 設定ファイルのパスを確認
-# macOSの場合: ~/.config/claude-code/config.json
+# Claude Codeを終了（Ctrl+C または exit）
+# 再度起動
+claude
+```
 
-# 以下の内容を追加（既存の設定がある場合はマージ）
-{
-  "mcpServers": {
-    "@executeautomation/playwright-mcp-server": {
-      "command": "npx",
-      "args": ["-y", "@executeautomation/playwright-mcp-server"]
-    }
-  }
-}
+**動作確認**
+
+Claude Codeで以下のように指示して、Playwright MCPが利用可能か確認：
+
+```
+Playwright MCPを使ってhttps://example.comにアクセスし、スクリーンショットを取得してください
 ```
 
 **機能:**
@@ -237,43 +241,52 @@ cd playwright-e2e-refactor
 claude
 ```
 
-#### Step 2: リファクタリングコマンドの実行
+#### Step 2: リファクタリングエージェントの起動
 
-Claude Code起動後、以下のカスタムスラッシュコマンドを使用してリファクタリングを開始します：
+Claude Code起動後、以下のコマンドでリファクタリング専門エージェントを起動します：
 
 ```bash
 # >のチャット待ち受け画面で以下を入力
-> /refactor
+> /refactor testcase/test-1.spec.ts
 ```
 
 **`/refactor` コマンドの機能:**
+- **refactor-agent**（カスタムエージェント）を自動起動
+- 指定されたMablテストファイルを分析し、自律的にリファクタリングを実行
 - `.claude/CLAUDE.md` に記載された体系的なリファクタリングフローを自動で開始
-- STEP 1（現状確認・準備）から STEP 3（本格リファクタリング）まで段階的にガイド
+- STEP 1（現状確認・準備）から STEP 3（本格リファクタリング）まで段階的に実行
 - 各段階で必要な情報収集、HTML取得依頼、動作確認を対話的に実施
+- Playwright MCPがインストールされている場合、HTML取得を自動化
 
 #### Step 3: リファクタリングの進行
 
-`/refactor` コマンド実行後、以下の流れで作業が進みます：
+`/refactor testcase/test-1.spec.ts` コマンド実行後、refactor-agentが以下の流れで自律的に作業を進めます：
 
 ##### **STEP 1: 現状確認・準備**
-Claudeから以下の情報を求められます：
-- 対象サービス名
-- Mablテストファイルのパス
-- 環境セットアップ状況（Playwright、dotenv、.env）
+refactor-agentが以下の情報を収集します：
+- 指定されたMablテストファイルの分析
+- 対象サービス名の確認
+- 環境セットアップ状況（Playwright、dotenv、.env）の確認
 - システム情報・アカウント情報の収集
-- 実HTML構造の事前取得依頼
+- 訪問ページの特定と実HTML構造の事前取得
 
-**作業者の対応:**
+**Playwright MCP使用時:**
+- agentが自動でブラウザを操作してHTML取得
+- `tmp/[サービス名]_[ページ名].html` に自動保存
+
+**Playwright MCP未使用時:**
 ```bash
-# Claudeの指示に従い、必要な情報を提供
-# 例: HTMLソース取得
+# agentから指示があった場合、以下の方法でHTML取得
 - ブラウザで対象ページにアクセス
 - 右クリック → 「ページのソースを表示」
 - HTML全体をコピーして tmp/[サービス名]_[ページ名].html として保存
 ```
 
+**成果物:**
+- `.claude/services/service-[サービス名]-specs.md` が作成される
+
 ##### **STEP 2: Mablテスト簡易修正**
-Claudeが段階的アプローチで元のテストを修正：
+refactor-agentが段階的アプローチで元のテストを修正：
 - Phase A: 現状把握（HTML構造確認、最小限の修正)
 - Phase B: 小単位修正（ログイン〜ホーム画面など）
 - Phase C: 段階的拡張（動作確認済み部分から範囲拡大）
@@ -281,7 +294,7 @@ Claudeが段階的アプローチで元のテストを修正：
 **完了条件:** 元のMablテストが最後まで実行成功すること
 
 ##### **STEP 3: 本格リファクタリング**
-Page Object Modelパターンを適用した本格的なリファクタリング：
+refactor-agentがPage Object Modelパターンを適用：
 - Phase 1: Mablシナリオ分析とHTML取得
 - Phase 2: 基盤構築（ドメイン別フォルダ構造）
 - Phase 3: データ層・ユーティリティ構築
@@ -289,11 +302,16 @@ Page Object Modelパターンを適用した本格的なリファクタリング
 - Phase 5: Page Object作成
 - Phase 6: テストケース変換
 
+**成果物:**
+- `src/` フォルダにPage Object構造が作成される
+- `tests/` フォルダにリファクタリング済みテストが作成される
+- `README.md` が作成される（リファクタリング対応表を含む）
+
 **完了条件:** リファクタリング後のテストが実行成功し、README.mdが作成されること
 
 #### 重要な原則
 
-`/refactor` コマンドは以下の原則に基づいて作業をガイドします：
+refactor-agentは以下の原則に基づいて作業を実行します：
 
 - **既存テストの忠実な再現**: 新機能追加ではなく変換が目的
 - **役割ベースセレクタの優先使用**: `getByRole()`、`getByLabel()`、`getByPlaceholder()`、`getByText()`を優先
@@ -304,13 +322,17 @@ Page Object Modelパターンを適用した本格的なリファクタリング
 #### Tips
 
 **対話的な進行:**
-- 各ステップでClaudeが作業者に確認・質問を行います
-- 問題発生時は立ち止まり、Claudeと解決策を協議してください
-- 不明点があればいつでもClaudeに質問してください
+- 各ステップでrefactor-agentが作業者に確認・質問を行います
+- 問題発生時は立ち止まり、agentと解決策を協議してください
+- 不明点があればいつでもagentに質問してください
 
 **段階的確認:**
 - 各Phaseの完了時に必ずテスト実行で動作確認を行います
 - 「ここまでは動く」という基準点を明確にしながら進めます
+
+**自律性:**
+- refactor-agentはCLAUDE.mdの全フローを理解して自律的に動作します
+- 必要に応じてagentから追加情報を求められた場合は回答してください
 ### Phase 5: 各サービスへの展開
 
 リファクタリングしたテストを各サービスのリポジトリに組み込む際は、以下の手順で進めてください：
@@ -327,14 +349,170 @@ Page Object Modelパターンを適用した本格的なリファクタリング
 
 #### 2. プロジェクト固有のカスタマイズ
 
-1. **`playwright.config.ts`** - テスト対象URL、プロジェクト設定を調整してください
-2. **`tests/data/`** - サービス固有のテストデータ・型定義を作成してください
-3. **`page/`** - サービス固有のPage Objectを実装してください
+##### **Step 1: サービスリポジトリのclone**
 
-#### 3. GitLab CI/CDへの統合
+```bash
+# 対象サービスのリポジトリをclone
+git clone https://rendezvous.m3.com/[service-name]/[repository-name].git
+cd [repository-name]
+```
 
-サービス担当エンジニアと相談の上、適切なタイミングでテストを実行するように設定してください。
-各サービスのCI/CD環境に応じて `.gitlab-ci.yml` にPlaywrightテストの実行ステージを追加してください。
+##### **Step 2: リファクタリング済みテストフォルダの配置**
+
+リファクタリングが完了した `playwright-e2e-refactor` フォルダをサービスリポジトリにコピーします。
+
+```bash
+# playwright-e2e-refactorフォルダ全体をサービスリポジトリにコピー
+cp -r /path/to/playwright-e2e-refactor /path/to/[repository-name]/e2e-tests
+
+# ⚠️ フォルダ名の変更を推奨
+# 例: playwright-e2e-refactor → [service-name]-e2e-tests
+mv e2e-tests/playwright-e2e-refactor e2e-tests/[service-name]-e2e-tests
+```
+
+**推奨フォルダ名の例:**
+- `medical-service-e2e-tests`
+- `patient-portal-e2e-tests`
+- `admin-dashboard-e2e-tests`
+
+##### **Step 3: 不要ファイル・設定の整理**
+
+コピー後、改めてClaude Codeを立ち上げ、シナリオに関係ないファイル・設定群を整理します。
+
+```bash
+# サービスリポジトリ内のe2e-testsフォルダに移動
+cd e2e-tests/[service-name]-e2e-tests
+
+# Claude Codeを起動
+claude
+```
+
+**Claudeに依頼する整理内容の例:**
+```
+> このサービスのE2Eテストに必要なファイルのみを残し、不要なファイルを削除してください。
+> 特に以下を整理してください：
+> - testcase/内の未使用のMabl元ファイル
+> - tmp/内の一時ファイル
+> - 不要な設定ファイル
+> - 他のサービス用の.claude/services/内のファイル
+```
+
+**整理対象の例:**
+- `testcase/` - リファクタリング完了済みの元のMablテスト
+- `tmp/` - HTML取得作業用の一時ファイル
+- `.claude/services/` - 他サービスの仕様ファイル（対象サービスのみ残す）
+- `node_modules/`, `playwright-report/`, `test-results/` - gitignore対象
+
+##### **Step 4: プロジェクト設定のカスタマイズ**
+
+以下のファイルをサービス固有の設定に調整します：
+
+1. **`playwright.config.ts`**
+   - `baseURL`: サービスのURL
+   - `projects`: 対象ブラウザ・デバイス設定
+   - `workers`: 並列実行数
+
+2. **`tests/data/`**
+   - サービス固有のテストデータ・型定義を作成
+
+3. **`.env`**
+   - サービス固有の環境変数（認証情報、API URL等）
+
+##### **Step 5: GitLab CI設定の導入とCI上の動作確認**
+
+このリポジトリには、Playwright E2Eテスト用のGitLab CI設定テンプレート（`.gitlab-ci.yml`）が含まれています。
+
+**CI設定の特徴:**
+- **unit4テンプレート活用**: `unit4-playwright-test`テンプレートを継承
+- **自動実行**: MR作成時やコミット時にPC/SP両対応テストを自動実行
+- **QA環境別実行**: qa1～qa10環境に対してマニュアルでテスト実行可能
+- **JUnitレポート生成**: GitLabのテスト結果画面で可視化
+
+**サービスリポジトリへの統合:**
+
+```bash
+# 1. サービスリポジトリのルートに.gitlab-ci.ymlをコピー
+cp .gitlab-ci.yml /path/to/[repository-name]/.gitlab-ci.yml
+
+# 2. サービス固有の設定に調整
+# - BASE_URL: サービスのベースURL
+# - BACKROOM_BASE_URL: バックルーム管理画面のURL（該当する場合）
+# - E2E_DIR: E2Eテストディレクトリ（デフォルト: "e2e"）
+# - PLAYWRIGHT_WORKERS: 並列実行数（デフォルト: "1" - 順次実行）
+# - PLAYWRIGHT_RETRIES: リトライ回数（デフォルト: "1"）
+```
+
+**既存の.gitlab-ci.ymlがある場合:**
+
+サービスリポジトリに既存のCI設定がある場合は、以下のように統合します：
+
+```yaml
+# 既存の.gitlab-ci.ymlに以下を追加
+
+include:
+  - project: unit4/ci-templates
+    ref: master
+    file:
+      - unit4-playwright-test/unit4-playwright-test.yml
+
+# stagesにintegrationを追加
+stages:
+  - test
+  - integration  # 追加
+
+# Playwright E2Eテストジョブを追加
+playwright:test:
+  rules: *rules-default
+  stage: test
+  interruptible: true
+  extends: .unit4-playwright-test
+  variables:
+    E2E_DIR: "e2e"
+    BASE_URL: "https://your-service.m3.com"
+    PLAYWRIGHT_WORKERS: "1"
+    PLAYWRIGHT_RETRIES: "1"
+  before_script:
+    - cd "${E2E_DIR}"
+    - npm ci
+    - npx playwright install --with-deps chromium
+  script:
+    - npx playwright test --project=chromium-desktop --project=chromium-mobile
+  artifacts:
+    when: always
+    paths:
+      - ${E2E_DIR}/playwright-report/
+      - ${E2E_DIR}/test-results/
+    reports:
+      junit: ${E2E_DIR}/test-results/junit.xml
+    expire_in: '1 week'
+```
+
+**CI上での動作確認:**
+```bash
+# 変更をコミット・プッシュしてCI実行を確認
+git add .
+git commit -m "Add E2E tests with Playwright"
+git push origin feature/add-e2e-tests
+
+# GitLabのパイプライン画面で実行結果を確認
+```
+
+##### **Step 6: MRリクエストの作成とレビュー対応**
+
+CI上でテストが成功したら、通常はMR（Merge Request）を作成する流れになりますが、まずエンジニアに見せる前にQAチーム内でレビューを行なってください。その指摘が修正され次第MRを作成し、各サービス担当エンジニアに見てもらってください。
+
+**MRの説明に含めるべき内容:**
+- リファクタリングの概要
+- 追加したテストケース一覧
+- Mablテストとの対応表（README.md参照）
+- 実行方法・注意事項
+
+**レビュー対応のポイント:**
+- サービス担当エンジニアからのフィードバックを反映
+- CI設定の調整（必要に応じて）
+- テストデータ・環境変数の確認
+- ドキュメント（README.md）の更新
+
 
 ## 必須共有ファイル
 
@@ -356,11 +534,8 @@ Page Object Modelパターンを適用した本格的なリファクタリング
 ### 1. `.env.example`
 ```bash
 # M3.com認証情報
-LOGIN_ID=your_login_id
+USERNAME=your_username
 PASSWORD=your_password
-
-# テスト対象URL
-BASE_URL=https://your-service.m3.com
 ```
 
 ### 2. `setup-guide.md`
