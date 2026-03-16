@@ -181,19 +181,15 @@ export class HeaderComponent {
    * ユーザー名要素の表示でログイン状態を判定
    */
   async isLoggedIn(timeout: number = 5000): Promise<boolean> {
-    console.log('🔍 ログイン状態を確認中...')
-
     try {
       await this.userName.waitFor({ state: 'visible', timeout })
       const usernameText = await this.userName.textContent()
 
       if (usernameText && usernameText.trim()) {
-        console.log(`✅ ログイン状態確認成功: ${usernameText.trim()}`)
         return true
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      console.log(`⚠️ ログイン状態を確認できませんでした: ${errorMessage}`)
+      // ログイン状態を確認できない場合はfalseを返す
     }
 
     return false
@@ -206,19 +202,15 @@ export class HeaderComponent {
    * @returns ユーザー名（取得できない場合は空文字）
    */
   async getUserName(timeout: number = 5000): Promise<string> {
-    console.log('📝 ユーザー名を取得中...')
-
     try {
       await this.userName.waitFor({ state: 'visible', timeout })
       const text = await this.userName.textContent()
 
       if (text && text.trim()) {
-        console.log(`✅ ユーザー名取得成功: ${text.trim()}`)
         return text.trim()
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      console.log(`⚠️ ユーザー名を取得できませんでした: ${errorMessage}`)
+      // ユーザー名を取得できない場合は空文字を返す
     }
 
     return ''
@@ -302,10 +294,8 @@ export class HeaderComponent {
         throw new Error(`未対応のサービスタイプです: ${serviceType}`)
     }
 
-    console.log(`🖱️ ${serviceType}サービスアイコンをクリック中...`)
     await service.waitFor({ state: 'visible' })
     await service.click()
-    console.log(`✅ ${serviceType}サービスアイコンのクリックが完了しました`)
   }
 
   /**

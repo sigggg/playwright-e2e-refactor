@@ -35,8 +35,6 @@ async function globalSetup(config: FullConfig) {
   // プロキシ設定は環境変数から取得（デフォルト値はQA1環境）
   const proxyServer = process.env.PROXY_SERVER || 'http://mrqa1.office.so-netm3.com:8889'
 
-  console.log('🔐 認証グローバルセットアップを開始します...')
-
   // ブラウザとページを起動
   // 注意: globalSetupではplaywright.config.tsのuse設定が自動適用されないため、明示的に指定
   const browser = await chromium.launch({
@@ -59,8 +57,6 @@ async function globalSetup(config: FullConfig) {
       password: process.env.PASSWORD || ''
     })
 
-    console.log('✅ M3.comログインが完了しました')
-
     // ログイン成功確認（ヘッダーにユーザー名が表示されることを確認）
     const header = new HeaderComponent(page)
     const isLoggedIn = await header.isLoggedIn()
@@ -70,11 +66,9 @@ async function globalSetup(config: FullConfig) {
     }
 
     const username = await header.getUserName()
-    console.log(`✅ ログイン状態確認完了: ${username}`)
 
     // 認証状態をファイルに保存
     await context.storageState({ path: authFile })
-    console.log(`✅ 認証状態を保存しました: ${authFile}`)
 
   } catch (error) {
     console.error('❌ 認証セットアップに失敗しました:', error)

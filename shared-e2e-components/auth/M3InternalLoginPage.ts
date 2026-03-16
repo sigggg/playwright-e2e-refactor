@@ -50,9 +50,7 @@ export class M3InternalLoginPage extends BasePage {
    * - BasePageのnavigate()メソッドを活用
    */
   async navigate(): Promise<void> {
-    console.log(`📡 M3 Internal管理画面にアクセス中: ${this.url}`)
     await super.navigate()
-    console.log('✅ M3 Internal管理画面へのアクセスが完了しました')
   }
 
   /**
@@ -67,38 +65,27 @@ export class M3InternalLoginPage extends BasePage {
    *   3. ログイン成功確認
    */
   async performLogin(credentials: M3InternalLoginCredentials): Promise<void> {
-    console.log('🔐 M3 Internal管理画面ログイン処理を開始中...')
 
     // 1. Loginボタンをクリックして認証画面へ遷移
-    console.log('🔍 「Login」ボタンを待機中...')
     await this.loginButton.waitFor({ state: 'visible' })
     await this.loginButton.click()
-    console.log('✅ 「Login」ボタンをクリックしました')
     await this.page.waitForLoadState('domcontentloaded')
 
     // 2. Cognito認証フォームで認証情報を入力・送信
-    console.log('🔍 Cognito認証フォームの表示を待機中...')
     await this.cognitoSignInText.waitFor({ state: 'visible' })
-    console.log('✅ AWS Cognitoログインフォームが表示されました')
 
-    console.log('📝 認証情報を入力中...')
     await this.cognitoUsernameInput.waitFor({ state: 'visible' })
     await this.cognitoUsernameInput.fill(credentials.username)
-    console.log(`✅ ユーザー名を入力しました: ${credentials.username}`)
 
     await this.cognitoPasswordInput.waitFor({ state: 'visible' })
     await this.cognitoPasswordInput.fill(credentials.password)
-    console.log('✅ パスワードを入力しました')
 
     await this.cognitoSubmitButton.waitFor({ state: 'visible' })
     await this.cognitoSubmitButton.click()
-    console.log('✅ Cognito認証を送信しました')
     await this.page.waitForLoadState('domcontentloaded')
 
     // 3. ログイン成功確認
-    console.log('🔍 ログイン成功を確認中...')
     await this.logoutLink.waitFor({ state: 'visible' })
-    console.log('✅ M3 Internal管理画面ログイン処理が完了しました')
   }
 
   /**
@@ -126,9 +113,7 @@ export class M3InternalLoginPage extends BasePage {
    * - POMカプセル化: Locatorプロパティを直接テストコードに露出させない
    */
   async verifyLogoutLinkVisible(): Promise<void> {
-    console.log('🔍 ログアウトリンクの表示を確認中...')
     await expect(this.logoutLink).toBeVisible()
-    console.log('✅ ログアウトリンクが表示されています')
   }
 }
 

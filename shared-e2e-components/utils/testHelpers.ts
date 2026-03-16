@@ -91,7 +91,6 @@ export class TestHelpers {
 
     for (const configPath of possiblePaths) {
       if (fs.existsSync(configPath)) {
-        console.log(`📁 エラー無視設定を読み込みました: ${configPath}`)
         return configPath
       }
     }
@@ -143,12 +142,10 @@ export class TestHelpers {
    * - ページタイトルの基本的な検証も含む
    */
   async verifyPageBasicElements(): Promise<void> {
-    console.log('🔍 ページの基本要素を確認中...')
 
     // ページタイトルの確認
     try {
       await expect(this.page).toHaveTitle(/m3\.com|電子書籍|医療/)
-      console.log('✅ ページタイトルが適切です')
     } catch (error) {
       console.warn('⚠️ ページタイトルの検証に失敗しましたが、テストを続行します')
     }
@@ -164,13 +161,11 @@ export class TestHelpers {
     for (const element of navigationElements) {
       try {
         await expect(this.page.locator(element).first()).toBeVisible()
-        console.log(`✅ ${element}要素を確認しました`)
       } catch (error) {
         console.warn(`⚠️ ${element}要素が見つかりませんでしたが、テストを続行します`)
       }
     }
 
-    console.log('✅ ページ基本要素の確認が完了しました')
   }
 
   /**
@@ -182,11 +177,9 @@ export class TestHelpers {
    * - ページ遷移や初期表示の安定化に利用
    */
   async waitForPageLoad(timeout: number = 30000): Promise<void> {
-    console.log('⏳ ページの読み込み完了を待機中...')
     try {
       await this.page.waitForLoadState('networkidle', { timeout })
       await this.page.waitForLoadState('domcontentloaded', { timeout })
-      console.log('✅ ページの読み込みが完了しました')
     } catch (error) {
       console.warn(`⚠️ ページ読み込みタイムアウトが発生しましたが、テストを続行します: ${error.message}`)
     }
@@ -202,7 +195,6 @@ export class TestHelpers {
    * - テスト失敗時の証跡やビジュアルリグレッション用途
    */
   async takeScreenshot(name: string, fullPage: boolean = true): Promise<void> {
-    console.log(`📸 スクリーンショットを撮影中: ${name}`)
     
     // 保存ディレクトリの確保
     const screenshotDir = 'test-results/screenshots'
@@ -218,7 +210,6 @@ export class TestHelpers {
       fullPage
     })
     
-    console.log(`✅ スクリーンショットが保存されました: ${filename}`)
   }
 
   /**
@@ -230,7 +221,6 @@ export class TestHelpers {
    * - バリデーションエラーやシステムエラーの自動検出
    */
   async checkForErrors(): Promise<string[]> {
-    console.log('🔍 ページ上のエラーメッセージを確認中...')
 
     const errorSelectors = [
       '.alert-danger',
@@ -265,7 +255,6 @@ export class TestHelpers {
     if (errors.length > 0) {
       console.warn(`⚠️ ${errors.length}個のエラーメッセージを発見しました:`, errors)
     } else {
-      console.log('✅ エラーメッセージは見つかりませんでした')
     }
 
     return errors
@@ -280,7 +269,6 @@ export class TestHelpers {
     if (url) {
       for (const ignored of this.ignoredErrors.ignoredRequestFailures) {
         if (ignored.url && url.includes(ignored.url)) {
-          console.log(`🔇 リクエスト失敗を無視: ${ignored.reason}`)
           return true
         }
       }
@@ -289,7 +277,6 @@ export class TestHelpers {
     // コンソールエラーの場合
     for (const ignored of this.ignoredErrors.ignoredConsoleErrors) {
       if (ignored.pattern && new RegExp(ignored.pattern, 'i').test(message)) {
-        console.log(`🔇 コンソールエラーを無視: ${ignored.reason}`)
         return true
       }
     }
@@ -297,7 +284,6 @@ export class TestHelpers {
     // ページエラーの場合
     for (const ignored of this.ignoredErrors.ignoredPageErrors) {
       if (ignored.pattern && new RegExp(ignored.pattern, 'i').test(message)) {
-        console.log(`🔇 ページエラーを無視: ${ignored.reason}`)
         return true
       }
     }
@@ -315,7 +301,6 @@ export class TestHelpers {
    * - エラー詳細をJSONファイルにダンプ
    */
   startConsoleErrorMonitoring(): void {
-    console.log('👂 コンソールエラー監視を開始しました（無視リスト対応）')
     
     // エラーダンプファイルの準備
     const errorDumpPath = path.join(process.cwd(), 'test-results', 'api-error-dump.json')
@@ -474,9 +459,7 @@ export class TestHelpers {
    * @param timeout タイムアウト時間（ミリ秒）
    */
   async waitForElement(locator: Locator, timeout: number = 10000): Promise<void> {
-    console.log(`⏳ 要素の表示を待機中: ${locator}`)
     await expect(locator).toBeVisible({ timeout })
-    console.log(`✅ 要素が表示されました: ${locator}`)
   }
 
   /**
@@ -493,9 +476,7 @@ export class TestHelpers {
     strategies: Parameters<typeof this.findWithFallback>[0],
     timeout: number = 10000
   ): Promise<Locator> {
-    console.log(`⏳ 段階的戦略で要素の表示を待機中...`)
     const locator = await this.findWithFallback(strategies, timeout)
-    console.log(`✅ 要素が表示されました`)
     return locator
   }
 
@@ -506,13 +487,11 @@ export class TestHelpers {
    * @param maxRetries 最大リトライ回数
    */
   async clickWithRetry(locator: Locator, maxRetries: number = 3): Promise<void> {
-    console.log(`🖱️ 要素をクリック中: ${locator}`)
 
     for (let i = 0; i < maxRetries; i++) {
       try {
         await locator.waitFor({ state: 'visible' })
         await locator.click()
-        console.log(`✅ 要素のクリックが成功しました: ${locator}`)
         return
       } catch (error) {
         console.warn(`⚠️ クリック試行 ${i + 1} 回目が失敗: ${error.message}`)
@@ -538,13 +517,11 @@ export class TestHelpers {
     strategies: Parameters<typeof this.findWithFallback>[0],
     maxRetries: number = 3
   ): Promise<void> {
-    console.log(`🖱️ 段階的戦略で要素をクリック中...`)
 
     for (let i = 0; i < maxRetries; i++) {
       try {
         const locator = await this.findWithFallback(strategies, 5000)
         await locator.click()
-        console.log(`✅ 要素のクリックが成功しました`)
         return
       } catch (error) {
         console.warn(`⚠️ クリック試行 ${i + 1} 回目が失敗: ${error.message}`)
@@ -563,13 +540,11 @@ export class TestHelpers {
    * @param text 入力するテキスト
    */
   async fillWithClear(locator: Locator, text: string): Promise<void> {
-    console.log(`📝 テキストを入力中: ${text}`)
     
     await locator.waitFor({ state: 'visible' })
     await locator.clear()
     await locator.fill(text)
     
-    console.log(`✅ テキスト入力が完了しました: ${text}`)
   }
 
   /**
@@ -586,13 +561,11 @@ export class TestHelpers {
     strategies: Parameters<typeof this.findWithFallback>[0],
     text: string
   ): Promise<void> {
-    console.log(`📝 段階的戦略でテキストを入力中: ${text}`)
     
     const locator = await this.findWithFallback(strategies, 5000)
     await locator.clear()
     await locator.fill(text)
     
-    console.log(`✅ テキスト入力が完了しました: ${text}`)
   }
 
 
@@ -605,7 +578,6 @@ export class TestHelpers {
    * - パフォーマンステストやボトルネック調査に利用
    */
   async getPerformanceMetrics(): Promise<any> {
-    console.log('📊 パフォーマンス指標を取得中...')
     
     const metrics = await this.page.evaluate(() => {
       const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming
@@ -617,7 +589,6 @@ export class TestHelpers {
       }
     })
 
-    console.log('✅ パフォーマンス指標を取得しました:', metrics)
     return metrics
   }
 
@@ -635,7 +606,6 @@ export class TestHelpers {
     threshold?: number
     maxDiffPixels?: number
   }): Promise<void> {
-    console.log(`📷 視覚的回帰テストを実行中: ${name}`)
     
     // ページが完全に読み込まれるまで待機
     await this.waitForPageLoad()
@@ -687,7 +657,6 @@ export class TestHelpers {
           })
         })
       } catch (error) {
-        console.log('カルーセル停止処理でエラー:', error)
       }
     })
 
@@ -697,10 +666,8 @@ export class TestHelpers {
         threshold: options?.threshold || 0.3,
         maxDiffPixels: options?.maxDiffPixels || 1000
       })
-      console.log(`✅ 視覚的回帰テストが完了しました: ${name}`)
     } catch (error) {
       if (error.message.includes("A snapshot doesn't exist")) {
-        console.log(`📷 ベースライン画像を作成しました: ${name}`)
       } else {
         throw error
       }
@@ -719,7 +686,6 @@ export class TestHelpers {
     hidden: number
     total: number
   }> {
-    console.log(`🔍 ${locators.length}個の要素を一括確認中...`)
     
     let visible = 0
     let hidden = 0
@@ -734,7 +700,6 @@ export class TestHelpers {
     }
     
     const result = { visible, hidden, total: locators.length }
-    console.log(`✅ 要素確認完了: ${visible}個表示, ${hidden}個非表示, 合計${result.total}個`)
     
     return result
   }
@@ -750,7 +715,6 @@ export class TestHelpers {
     const errorDumpPath = path.join(process.cwd(), 'test-results', 'api-error-dump.json')
     if (fs.existsSync(errorDumpPath)) {
       fs.writeFileSync(errorDumpPath, '[]')
-      console.log('🗑️ エラーダンプファイルをクリアしました')
     }
   }
 
@@ -776,7 +740,6 @@ export class TestHelpers {
    * ```
    */
   findByRole(role: string, options?: { name?: string | RegExp; exact?: boolean }): Locator {
-    console.log(`🎯 役割ベースで要素を検索中: role="${role}", options=${JSON.stringify(options)}`)
     return this.page.getByRole(role as any, options)
   }
 
@@ -798,7 +761,6 @@ export class TestHelpers {
    * ```
    */
   findByLabel(text: string | RegExp, options?: { exact?: boolean }): Locator {
-    console.log(`🏷️ ラベルベースで要素を検索中: "${text}"`)
     return this.page.getByLabel(text, options)
   }
 
@@ -819,7 +781,6 @@ export class TestHelpers {
    * ```
    */
   findByPlaceholder(text: string | RegExp, options?: { exact?: boolean }): Locator {
-    console.log(`📝 プレースホルダーベースで要素を検索中: "${text}"`)
     return this.page.getByPlaceholder(text, options)
   }
 
@@ -840,7 +801,6 @@ export class TestHelpers {
    * ```
    */
   findByText(text: string | RegExp, options?: { exact?: boolean }): Locator {
-    console.log(`💬 テキストベースで要素を検索中: "${text}"`)
     return this.page.getByText(text, options)
   }
 
@@ -861,7 +821,6 @@ export class TestHelpers {
    * ```
    */
   findByTestId(testId: string): Locator {
-    console.log(`🧪 data-testidベースで要素を検索中: "${testId}"`)
     return this.page.getByTestId(testId)
   }
 
@@ -900,11 +859,9 @@ export class TestHelpers {
     >,
     timeout: number = 5000
   ): Promise<Locator> {
-    console.log(`🔄 段階的セレクタ戦略を実行中: ${strategies.length}個の戦略`)
 
     for (let i = 0; i < strategies.length; i++) {
       const strategy = strategies[i]
-      console.log(`  ${i + 1}/${strategies.length}: ${strategy.type}戦略を試行中`)
 
       try {
         let locator: Locator
@@ -935,11 +892,9 @@ export class TestHelpers {
 
         // 要素の存在確認
         await locator.waitFor({ state: 'visible', timeout })
-        console.log(`✅ ${strategy.type}戦略で要素を発見しました`)
         return locator
 
       } catch (error) {
-        console.log(`  ${strategy.type}戦略は失敗: ${error.message}`)
         if (i === strategies.length - 1) {
           throw new Error(`❌ 全ての戦略が失敗しました。利用可能な戦略: ${strategies.map(s => s.type).join(', ')}`)
         }

@@ -168,10 +168,8 @@ export class FooterComponent {
    * 重要なポリシーページへの遷移テストに使用
    */
   async clickTermsOfUse(): Promise<void> {
-    console.log('📜 利用規約リンクをクリック中...')
     await this.termsOfUse.waitFor({ state: 'visible' })
     await this.termsOfUse.click()
-    console.log('✅ 利用規約リンクのクリックが完了しました')
   }
 
   /**
@@ -181,10 +179,8 @@ export class FooterComponent {
    * 個人情報保護方針ページへの遷移テストに使用
    */
   async clickPrivacyPolicy(): Promise<void> {
-    console.log('🔒 プライバシーポリシーリンクをクリック中...')
     await this.privacyPolicy.waitFor({ state: 'visible' })
     await this.privacyPolicy.click()
-    console.log('✅ プライバシーポリシーリンクのクリックが完了しました')
   }
 
   /**
@@ -194,10 +190,8 @@ export class FooterComponent {
    * ヘルプページへの遷移テストに使用
    */
   async clickHelp(): Promise<void> {
-    console.log('❓ ヘルプリンクをクリック中...')
     await this.help.waitFor({ state: 'visible' })
     await this.help.click()
-    console.log('✅ ヘルプリンクのクリックが完了しました')
   }
 
   /**
@@ -207,10 +201,8 @@ export class FooterComponent {
    * お問い合わせページへの遷移テストに使用
    */
   async clickContact(): Promise<void> {
-    console.log('📧 お問い合わせリンクをクリック中...')
     await this.contact.waitFor({ state: 'visible' })
     await this.contact.click()
-    console.log('✅ お問い合わせリンクのクリックが完了しました')
   }
 
   /**
@@ -243,10 +235,8 @@ export class FooterComponent {
         throw new Error(`未対応のアプリタイプです: ${appType}`)
     }
 
-    console.log(`📱 ${appType}アプリリンクをクリック中...`)
     await appElement.waitFor({ state: 'visible' })
     await appElement.click()
-    console.log(`✅ ${appType}アプリリンクのクリックが完了しました`)
   }
 
   /**
@@ -303,10 +293,8 @@ export class FooterComponent {
         throw new Error(`未対応のヘルプリンクタイプです: ${linkType}`)
     }
 
-    console.log(`📖 ${linkType}ヘルプリンクをクリック中...`)
     await helpElement.waitFor({ state: 'visible' })
     await helpElement.click()
-    console.log(`✅ ${linkType}ヘルプリンクのクリックが完了しました`)
   }
 
   /**
