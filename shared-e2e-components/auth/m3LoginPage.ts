@@ -35,8 +35,6 @@ export class M3LoginPage extends BasePage {
    * - ログイン後CA広告のスキップ処理を含む
    */
   async performLogin(credentials: LoginCredentials): Promise<void> {
-    console.log('🔐 M3ログイン処理を開始中...')
-
     // 1. m3.comにアクセス
     await this.navigateToM3()
 
@@ -48,8 +46,6 @@ export class M3LoginPage extends BasePage {
 
     // 4. ログイン後CA広告スキップ
     await this.skipPostLoginCA()
-
-    console.log('✅ M3ログイン処理が正常に完了しました')
   }
 
   /**
@@ -58,8 +54,7 @@ export class M3LoginPage extends BasePage {
    */
   private async navigateToM3(): Promise<void> {
     const m3comURL = 'https://www.m3.com'
-    console.log(`📡 ${m3comURL} にアクセス中...`)
-    
+
     try {
       await this.page.goto(m3comURL, {
         waitUntil: 'domcontentloaded'
@@ -93,15 +88,12 @@ export class M3LoginPage extends BasePage {
    * @private
    */
   private async ensureLoginFormVisible(): Promise<void> {
-    console.log('🔍 ログインフォームの表示状態を確認中...')
-
     try {
       const loginIdField = this.page.getByPlaceholder('ログインID')
       await loginIdField.waitFor({ state: 'visible' })
-      console.log('✅ ログインフォームが既に表示されています')
       return
     } catch (error: unknown) {
-      console.log('🔍 ログインフォームが非表示、ログインボタンを探索中...')
+      // ログインフォームが非表示の場合、ログインボタンを探索
     }
 
     // ログインボタンをクリックしてフォームを表示
@@ -119,7 +111,6 @@ export class M3LoginPage extends BasePage {
       try {
         const element = this.page.locator(selector).first()
         if (await element.isVisible()) {
-          console.log(`✅ ログインボタンを発見: ${selector}`)
           await element.click()
           loginButtonFound = true
           break
@@ -141,20 +132,16 @@ export class M3LoginPage extends BasePage {
    * @private
    */
   private async fillLoginCredentials(credentials: LoginCredentials): Promise<void> {
-    console.log('📝 ログイン情報を入力中...')
-
     try {
       // ログインID入力フィールド（placeholder-basedセレクタ）
       const loginIdField = this.page.getByPlaceholder('ログインID')
       await loginIdField.waitFor({ state: 'visible' })
       await loginIdField.fill(credentials.username)
-      console.log('✅ ログインIDを入力しました')
 
       // パスワード入力フィールド（placeholder-basedセレクタ）
       const passwordField = this.page.getByPlaceholder('パスワード')
       await passwordField.waitFor({ state: 'visible' })
       await passwordField.fill(credentials.password)
-      console.log('✅ パスワードを入力しました')
 
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -167,8 +154,6 @@ export class M3LoginPage extends BasePage {
    * @private
    */
   private async submitLoginForm(): Promise<void> {
-    console.log('🚀 ログインを実行中...')
-
     // ログインAPIレスポンスの監視設定（PC版・SP版両対応）
     const loginResponsePromise = this.page.waitForResponse(
       response =>
@@ -183,23 +168,13 @@ export class M3LoginPage extends BasePage {
 
       await loginButton.waitFor({ state: 'visible' })
       await loginButton.click()
-      console.log('✅ ログインボタンをクリックしました')
 
       // APIレスポンスの確認
       const loginResponse = await loginResponsePromise
       const status = loginResponse.status()
-      console.log(`📡 ログインAPIレスポンス: ${status}`)
 
       // ステータスコード200または303を成功と見なす
-      if (status === 303) {
-        console.log('✅ ログイン成功（303リダイレクト受信）')
-        const locationHeader = loginResponse.headers().location
-        if (locationHeader) {
-          console.log(`📍 リダイレクト先: ${locationHeader}`)
-        }
-      } else if (status === 200) {
-        console.log('✅ ログイン成功（200 OK受信）')
-      } else {
+      if (status !== 303 && status !== 200) {
         throw new Error(`❌ ログインが失敗しました。ステータス: ${status}`)
       }
 
@@ -217,8 +192,6 @@ export class M3LoginPage extends BasePage {
    * @private
    */
   private async verifyM3LoginSuccess(): Promise<void> {
-    console.log('🔍 M3.comでのログイン成功状態を確認中...')
-
     try {
       // M3.comヘッダーのユーザー名表示を確認（役割ベースセレクタを優先）
       // ユーザー名は「〇〇先生」「〇〇さん」または「〇〇様」の形式で表示される
@@ -228,7 +201,6 @@ export class M3LoginPage extends BasePage {
 
       const usernameText = await usernameElement.textContent()
       if (usernameText && usernameText.trim()) {
-        console.log(`✅ M3.comログイン成功確認。ユーザー名: ${usernameText.trim()}`)
         return
       }
     } catch (error: unknown) {
@@ -277,37 +249,29 @@ export class M3LoginPage extends BasePage {
    * - 実際のM3.comのDOM構造に対応した確実なログアウト処理
    */
   async logout(): Promise<void> {
-    console.log('🚪 ログアウト処理を実行中...')
-
     try {
       // 1. ユーザー名をクリックしてドロップダウンを開く（役割ベースセレクタを優先）
       const userNameButton = this.page.getByText(/先生|さん|様/).first()
       await userNameButton.waitFor({ state: 'visible' })
       await userNameButton.click()
-      console.log('✅ ユーザー情報ドロップダウンを開きました')
 
       // 2. ドロップダウンが表示されるまで待機
       const userInfoBox = this.page.getByRole('menu')
       await userInfoBox.waitFor({ state: 'visible' })
-      console.log('✅ ユーザー情報ボックスが表示されました')
 
       // 3. ログアウトリンクをクリック（役割ベースセレクタを優先）
       const logoutLink = this.page.getByRole('link', { name: 'ログアウト' })
       await logoutLink.waitFor({ state: 'visible' })
       await logoutLink.click()
-      console.log('✅ ログアウトボタンをクリックしました')
 
       // 4. ページ遷移の完了を待機
       await this.page.waitForLoadState('domcontentloaded')
-      console.log('✅ ログアウト処理が正常に完了しました')
 
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.warn(`⚠️ ユーザー情報ドロップダウン経由のログアウトに失敗しました: ${errorMessage}`)
-      
+
       // フォールバック: 直接的なログアウト要素の検索
-      console.log('🔄 フォールバックログアウト処理を試行中...')
-      
       const fallbackSelectors = [
         'a[onclick*="atlas-logout"]',
         'form#atlas-logout a',
@@ -321,7 +285,6 @@ export class M3LoginPage extends BasePage {
           if (await element.isVisible()) {
             await element.click()
             await this.page.waitForLoadState('domcontentloaded')
-            console.log(`✅ フォールバックログアウトが成功しました: ${selector}`)
             return
           }
         } catch (fallbackError) {

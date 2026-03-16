@@ -36,9 +36,7 @@ export class M3SPLoginPage extends BasePage {
    * - BasePageのnavigate()メソッドを活用
    */
   async navigate(): Promise<void> {
-    console.log(`📡 M3.com SPページにアクセス中: ${this.url}`)
     await super.navigate()
-    console.log('✅ M3.com SPページへのアクセスが完了しました')
   }
 
   /**
@@ -51,8 +49,6 @@ export class M3SPLoginPage extends BasePage {
    * - ログイン後CA広告のスキップ処理を含む
    */
   async performLogin(credentials: SPLoginCredentials): Promise<void> {
-    console.log('🔐 M3.com SPログイン処理を開始中...')
-
     // 1. SP版のm3.comにアクセス
     await this.navigateToSP()
 
@@ -64,8 +60,6 @@ export class M3SPLoginPage extends BasePage {
 
     // 4. ログイン成功確認
     await this.verifySPLoginSuccess()
-
-    console.log('✅ M3.com SPログイン処理が完了しました')
   }
 
   /**
@@ -81,8 +75,6 @@ export class M3SPLoginPage extends BasePage {
    * @private
    */
   private async navigateToSP(): Promise<void> {
-    console.log(`📡 ${this.url} にアクセス中...`)
-
     try {
       await this.page.goto(this.url, {
         waitUntil: 'domcontentloaded'
@@ -106,7 +98,6 @@ export class M3SPLoginPage extends BasePage {
     // ログインフォームの表示確認（既にログイン済みかチェック）
     const shouldLogin = await this.ensureLoginFormVisible()
     if (!shouldLogin) {
-      console.log('✅ 既にログイン済みです。ログイン処理をスキップします。')
       return
     }
 
@@ -123,8 +114,6 @@ export class M3SPLoginPage extends BasePage {
    * @returns ログインが必要な場合はtrue、既にログイン済みの場合はfalse
    */
   private async ensureLoginFormVisible(): Promise<boolean> {
-    console.log('🔍 ログインフォームの表示状態を確認中...')
-
     // ログイン済みかどうかを確認（メニューボタンの存在で判定）
     try {
       const menuButton = this.page.getByRole('button', { name: 'メニュー' })
@@ -133,7 +122,7 @@ export class M3SPLoginPage extends BasePage {
         return false // 既にログイン済み
       }
     } catch (error) {
-      console.log('🔍 メニューボタンが見つかりません。ログインフォームを確認します。')
+      // メニューボタンが見つからない場合、ログインフォームを確認
     }
 
     // ログインフォームが表示されているか確認
@@ -141,11 +130,9 @@ export class M3SPLoginPage extends BasePage {
     const loginFormExists = await loginIdField.isVisible().catch(() => false)
 
     if (!loginFormExists) {
-      console.log('⚠️ ログインフォームが見つかりません。既にログイン済みの可能性があります。')
       return false // ログインフォームがない = 既にログイン済み
     }
 
-    console.log('✅ ログインフォームが表示されています')
     return true // ログインが必要
   }
 
@@ -154,19 +141,15 @@ export class M3SPLoginPage extends BasePage {
    * @private
    */
   private async fillLoginCredentials(credentials: SPLoginCredentials): Promise<void> {
-    console.log('📝 ログイン情報を入力中...')
-
     try {
       // ログインID入力（最初のテキストボックス）
       const loginIdField = this.page.getByRole('textbox').first()
       await loginIdField.waitFor({ state: 'visible' })
       await loginIdField.fill(credentials.username)
-      console.log(`✅ ログインIDを入力しました: ${credentials.username}`)
 
       // パスワード入力（2番目のテキストボックス）
       const passwordField = this.page.getByRole('textbox').nth(1)
       await passwordField.fill(credentials.password)
-      console.log('✅ パスワードを入力しました')
 
     } catch (error) {
       throw new Error(`❌ ログインフォームの入力に失敗しました: ${error.message}`)
@@ -178,8 +161,6 @@ export class M3SPLoginPage extends BasePage {
    * @private
    */
   private async submitLoginForm(): Promise<void> {
-    console.log('🚀 ログインを実行中...')
-
     // ログインAPIレスポンスの監視設定
     const loginResponsePromise = this.page.waitForResponse(
       response => response.url().includes('/login') && response.request().method() === 'POST'
@@ -189,23 +170,13 @@ export class M3SPLoginPage extends BasePage {
       // ログインボタンをクリック
       const loginButton = this.page.getByRole('button', { name: /ログイン/ })
       await loginButton.click()
-      console.log('✅ ログインボタンをクリックしました')
 
       // ログインAPIレスポンスを待機
       const loginResponse = await loginResponsePromise
       const statusCode = loginResponse.status()
-      console.log(`📡 ログインAPIレスポンス: ${statusCode}`)
 
       // ステータスコード確認
-      if (statusCode === 303 || statusCode === 302) {
-        console.log('✅ ログイン成功（303/302リダイレクト受信）')
-        const location = loginResponse.headers()['location']
-        if (location) {
-          console.log(`📍 リダイレクト先: ${location}`)
-        }
-      } else if (statusCode === 200) {
-        console.log('✅ ログイン成功（200 OK受信）')
-      } else {
+      if (statusCode !== 303 && statusCode !== 302 && statusCode !== 200) {
         throw new Error(`❌ ログインが失敗しました。ステータス: ${statusCode}`)
       }
 
@@ -226,8 +197,6 @@ export class M3SPLoginPage extends BasePage {
    * - ログイン失敗時はエラーをスローしてテストを停止
    */
   private async verifySPLoginSuccess(): Promise<void> {
-    console.log('🔍 M3.com SPでのログイン成功状態を確認中...')
-
     try {
       // SP版のユーザー名表示要素を確認（フッター内の専用クラス）
       // 例: "ユニットヨ 先生"、"ユニットヨ さん"、"ユニットヨ 様"
@@ -236,7 +205,6 @@ export class M3SPLoginPage extends BasePage {
 
       const usernameText = await usernameElement.textContent()
       if (usernameText && usernameText.trim()) {
-        console.log(`✅ M3.com SPログイン成功確認。ユーザー名: ${usernameText.trim()}`)
         return
       }
     } catch (error) {
@@ -285,31 +253,24 @@ export class M3SPLoginPage extends BasePage {
    * - フッターのユーザー情報エリアからログアウトリンクをクリック
    */
   async logout(): Promise<void> {
-    console.log('🚪 ログアウト処理を実行中...')
-
     try {
       // 1. メニューボタンをクリック
       const menuButton = this.page.getByRole('button', { name: 'メニュー' })
       await menuButton.waitFor({ state: 'visible' })
       await menuButton.click()
-      console.log('✅ メニューボタンをクリックしました')
 
       // 2. ログアウトリンクをクリック
       const logoutLink = this.page.getByRole('link', { name: 'ログアウト' })
       await logoutLink.waitFor({ state: 'visible' })
       await logoutLink.click()
-      console.log('✅ ログアウトリンクをクリックしました')
 
       // 3. ページ遷移の完了を待機
       await this.page.waitForLoadState('domcontentloaded')
-      console.log('✅ ログアウト処理が正常に完了しました')
 
     } catch (error) {
       console.warn(`⚠️ メニュー経由のログアウトに失敗しました: ${error.message}`)
 
       // フォールバック: 直接的なログアウト要素の検索
-      console.log('🔄 フォールバックログアウト処理を試行中...')
-
       const fallbackSelectors = [
         'a[href*="logout"]',
         'text=ログアウト',
@@ -323,7 +284,6 @@ export class M3SPLoginPage extends BasePage {
           if (await element.isVisible()) {
             await element.click()
             await this.page.waitForLoadState('domcontentloaded')
-            console.log(`✅ フォールバックログアウトが成功しました: ${selector}`)
             return
           }
         } catch (fallbackError) {

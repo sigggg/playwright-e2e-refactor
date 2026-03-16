@@ -58,9 +58,7 @@ export class BackroomLoginPage extends BasePage {
    * Backroom管理画面へのナビゲート
    */
   async navigateToBackroom(): Promise<void> {
-    console.log('🔧 Backroom管理画面にナビゲート中...')
     await this.navigate()
-    console.log('✅ Backroom管理画面へのナビゲート完了')
   }
 
   /**
@@ -78,7 +76,6 @@ export class BackroomLoginPage extends BasePage {
     ldapUserId: string
     ldapPassword: string
   }): Promise<void> {
-    console.log('🔐 Backroom管理画面へのログインを開始...')
 
     // ==================================================
     // Step 1: Backroom管理画面にアクセス
@@ -87,32 +84,25 @@ export class BackroomLoginPage extends BasePage {
     await this.page.waitForLoadState('domcontentloaded')
 
     // Backroomホームページの「ログイン」ボタンをクリック
-    console.log('🔍 Backroomホームページの「ログイン」ボタンを待機中...')
     await this.backroomLoginButton.waitFor({ state: 'visible' })
     await this.backroomLoginButton.click()
-    console.log('✅ 「ログイン」ボタンをクリックしました')
 
     // ==================================================
     // Step 2: Cognito認証（AWS Cognito）
     // ==================================================
-    console.log('🔍 Cognito認証フォームの表示を待機中...')
 
     // Cognitoフォームの表示確認（.last()で表示要素を取得）
     await this.cognitoSignInText.waitFor({ state: 'visible' })
-    console.log('✅ AWS Cognitoログインフォームが表示されました')
 
     // Cognito認証情報入力
     await this.cognitoUsernameInput.waitFor({ state: 'visible' })
     await this.cognitoUsernameInput.fill(credentials.cognitoUsername)
-    console.log(`✅ Cognitoユーザー名を入力しました: ${credentials.cognitoUsername}`)
 
     await this.cognitoPasswordInput.waitFor({ state: 'visible' })
     await this.cognitoPasswordInput.fill(credentials.cognitoPassword)
-    console.log('✅ Cognitoパスワードを入力しました')
 
     // Cognito認証を送信
     await this.cognitoSubmitButton.click()
-    console.log('✅ Cognito認証を送信しました')
 
     // ページ遷移の完了を待機
     await this.page.waitForLoadState('domcontentloaded')
@@ -122,9 +112,7 @@ export class BackroomLoginPage extends BasePage {
     // ==================================================
     // Cognito認証のみで完了する場合が多いため、直接ログアウトボタンを確認
     // LDAP認証画面が表示される場合は別途対応が必要
-    console.log('🔍 ログイン成功を確認中...')
     await this.logoutButton.waitFor({ state: 'visible' })
-    console.log('✅ Backroom管理画面へのログイン成功')
   }
 
   /**
@@ -144,9 +132,7 @@ export class BackroomLoginPage extends BasePage {
    * - POMカプセル化: Locatorプロパティを直接テストコードに露出させない
    */
   async verifyLogoutButtonVisible(): Promise<void> {
-    console.log('🔍 ログアウトボタンの表示を確認中...')
     await expect(this.logoutButton).toBeVisible()
-    console.log('✅ ログアウトボタンが表示されています')
   }
 }
 
