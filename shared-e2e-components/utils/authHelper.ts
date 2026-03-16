@@ -53,10 +53,8 @@ export class AuthHelper {
     const m3comURL = 'https://www.m3.com' // プロキシでQA環境に切り替え
     const ebookURL = process.env.TEST_BASE_URL || 'https://ebook-qa1.m3.com'
 
-    console.log('🔐 Starting login process...')
 
     // 1. www.m3.comにアクセス（プロキシでQA環境に切り替え）
-    console.log(`📡 Navigating to ${m3comURL}`)
     try {
       await this.page.goto(m3comURL, {
         waitUntil: 'domcontentloaded'
@@ -82,17 +80,13 @@ export class AuthHelper {
     await this.verifyLoginSuccess()
 
     // 6. ログイン完了後、直接ebook-qa1.m3.comに移動
-    console.log(`📡 Manually navigating to ${ebookURL} after login`)
-    console.log(`🔍 Current URL before navigation: ${this.page.url()}`)
     
     await this.page.goto(ebookURL, { waitUntil: 'domcontentloaded' })
 
-    console.log(`🔍 URL after navigation: ${this.page.url()}`)
 
     // 7. ebook サイトでのログイン状態を確認
     await this.verifyEbookLoginState()
 
-    console.log('✅ Login process completed successfully')
   }
 
   /**
@@ -102,7 +96,6 @@ export class AuthHelper {
    * - 役割ベースセレクタを優先した堅牢な検出を実装。
    */
   private async clickLoginButton (): Promise<void> {
-    console.log('🔍 Checking if login form is already visible...')
 
     // 役割ベースセレクタでログインフォームの存在確認
     try {
@@ -117,16 +110,13 @@ export class AuthHelper {
       for (const field of loginFields) {
         try {
           await expect(field).toBeVisible()
-          console.log('✅ Login form is already visible on the page')
           return
         } catch {
           continue
         }
       }
       
-      console.log('🔍 Login form not visible, looking for login button...')
     } catch (error: unknown) {
-      console.log('🔍 Login form not visible, looking for login button...')
     }
 
     // 役割ベースセレクタでログインボタンを探す（段階的戦略）
@@ -156,7 +146,6 @@ export class AuthHelper {
       const strategy = loginStrategies[i]
       try {
         await expect(strategy).toBeVisible()
-        console.log(`✅ Found login button with strategy ${i + 1}/${loginStrategies.length}`)
         await strategy.click()
         loginButtonFound = true
         break
@@ -181,7 +170,6 @@ export class AuthHelper {
    * - 段階的セレクタ戦略でフォールバック機能を提供。
    */
   private async fillLoginForm (credentials: LoginCredentials): Promise<void> {
-    console.log('📝 Filling login form...')
 
     try {
       // ログインID入力フィールド（段階的戦略）
@@ -210,7 +198,6 @@ export class AuthHelper {
           const field = loginIdStrategies[i]
           await expect(field).toBeVisible()
           loginIdField = field
-          console.log(`✅ Found loginId field with strategy ${i + 1}/${loginIdStrategies.length}`)
           break
         } catch {
           continue
@@ -222,7 +209,6 @@ export class AuthHelper {
       }
 
       await loginIdField.fill(credentials.username)
-      console.log('✅ Successfully filled loginId field')
 
       // パスワード入力フィールド（段階的戦略）
       const passwordStrategies = [
@@ -248,7 +234,6 @@ export class AuthHelper {
           const field = passwordStrategies[i]
           await expect(field).toBeVisible()
           passwordField = field
-          console.log(`✅ Found password field with strategy ${i + 1}/${passwordStrategies.length}`)
           break
         } catch {
           continue
@@ -260,9 +245,7 @@ export class AuthHelper {
       }
 
       await passwordField.fill(credentials.password)
-      console.log('✅ Successfully filled password field')
 
-      console.log('✅ Login form filled successfully')
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       throw new Error(`❌ Login form filling failed: ${errorMessage}`)
@@ -276,7 +259,6 @@ export class AuthHelper {
    * - 段階的セレクタ戦略で堅牢な要素特定を実現。
    */
   private async submitLogin (): Promise<void> {
-    console.log('🚀 Submitting login...')
 
     // ログインAPIレスポンスを監視
     const loginResponsePromise = this.page.waitForResponse(response =>
@@ -311,7 +293,6 @@ export class AuthHelper {
           const button = loginButtonStrategies[i]
           await expect(button).toBeVisible()
           loginButton = button
-          console.log(`✅ Found login button with strategy ${i + 1}/${loginButtonStrategies.length}`)
           break
         } catch {
           continue
@@ -323,17 +304,13 @@ export class AuthHelper {
       }
 
       await loginButton.click()
-      console.log('✅ Successfully clicked login button')
 
       // ログインAPIのレスポンスを待機
       const loginResponse = await loginResponsePromise
-      console.log(`📡 Login API response status: ${loginResponse.status()}`)
 
       if (loginResponse.status() === 303) {
-        console.log('✅ Login successful (303 redirect received)')
         const locationHeader = loginResponse.headers().location
         if (locationHeader) {
-          console.log(`📍 Redirect location: ${locationHeader}`)
         }
       } else {
         throw new Error(`❌ Login failed with status: ${loginResponse.status()}`)
@@ -354,7 +331,6 @@ export class AuthHelper {
    * - 段階的セレクタ戦略で堅牢な要素特定を実現。
    */
   private async verifyLoginSuccess (): Promise<void> {
-    console.log('🔍 Verifying login success...')
 
     // ユーザー名表示要素を段階的戦略で特定
     const usernameStrategies = [
@@ -386,7 +362,6 @@ export class AuthHelper {
         
         const usernameText = await usernameElement.textContent()
         if (usernameText && usernameText.trim()) {
-          console.log(`✅ Login success confirmed with username: ${usernameText.trim()} (strategy ${i + 1}/${usernameStrategies.length})`)
           return
         }
       } catch (error: unknown) {
@@ -399,7 +374,6 @@ export class AuthHelper {
       // ログアウトボタンの存在でログイン状態を確認
       const logoutButton = this.page.getByRole('button', { name: /ログアウト|logout/i })
       await expect(logoutButton).toBeVisible()
-      console.log('✅ Login success confirmed by logout button presence')
       return
     } catch (error: unknown) {
       // ユーザー名もログアウトボタンも見つからない場合はログイン失敗
@@ -413,7 +387,6 @@ export class AuthHelper {
    * - 役割ベースセレクタを優先してログイン状態を判定。段階的戦略でフォールバック対応。
    */
   private async verifyEbookLoginState(): Promise<void> {
-    console.log('🔍 Verifying ebook site login state...');
 
     // ebookサイトでのログイン状態の指標（段階的戦略）
     const loginIndicatorStrategies = [
@@ -446,7 +419,6 @@ export class AuthHelper {
       try {
         const indicator = loginIndicatorStrategies[i]
         await expect(indicator).toBeVisible();
-        console.log(`✅ Ebook login state confirmed with strategy ${i + 1}/${loginIndicatorStrategies.length}`);
         ebookLoginConfirmed = true;
         break;
       } catch (error: unknown) {
@@ -469,7 +441,6 @@ export class AuthHelper {
         for (const strategy of alternativeStrategies) {
           try {
             await expect(strategy).toBeVisible();
-            console.log('✅ Ebook login state confirmed with alternative method');
             ebookLoginConfirmed = true;
             break;
           } catch {
@@ -485,7 +456,6 @@ export class AuthHelper {
         try {
           await expect(this.page).toHaveTitle(/m3\.com|電子書籍/, );
           expect(this.page.url()).toContain('ebook-qa1.m3.com');
-          console.log('✅ Basic ebook site access confirmed');
         } catch (error: unknown) {
           console.warn('⚠️ Basic ebook site verification also failed, but proceeding with tests...');
         }
@@ -500,7 +470,6 @@ export class AuthHelper {
    * - 段階的セレクタ戦略で堅牢な要素特定を実現。
    */
   async logout (): Promise<void> {
-    console.log('🚪 Logging out...')
 
     const logoutStrategies = [
       // 1. 役割ベースセレクタ（最優先）
@@ -529,7 +498,6 @@ export class AuthHelper {
         await expect(strategy).toBeVisible()
         await strategy.click()
         await this.page.waitForLoadState('domcontentloaded')
-        console.log(`✅ Logged out successfully with strategy ${i + 1}/${logoutStrategies.length}`)
         return
       } catch (error: unknown) {
         continue
