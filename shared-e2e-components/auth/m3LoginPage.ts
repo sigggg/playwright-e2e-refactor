@@ -243,17 +243,28 @@ export class M3LoginPage extends BasePage {
    * @private
    * @description
    * - ログイン後に表示される可能性のあるCA広告をスキップ
-   * - 「スキップする」リンクが存在する場合のみクリック
-   * - 存在しない場合はエラーにせず続行
+   * - CAモーダルが表示されるまで短時間待機し、表示された場合のみスキップ処理を実行
+   * - PC版では .m3_li-sp-notsetting 内の「スキップする」リンクをクリック
    */
   private async skipPostLoginCA(): Promise<void> {
     try {
-      await this.page
-        .getByRole('link', { name: 'スキップする' })
-        .click()
-      console.log('✅ ログイン後CAをスキップしました')
+      // CAコンテナが表示されるか確認（短時間待機）
+      const caContainer = this.page.locator('.m3_ca-container')
+      await caContainer.waitFor({ state: 'visible', timeout: 3000 })
+
+      // 「スキップする」リンクを探す
+      const skipLink = this.page.locator('.m3_li-sp-notsetting a:has-text("スキップする")')
+
+      if (await skipLink.isVisible()) {
+        await skipLink.click()
+        console.log('✅ ログイン後CAをスキップしました')
+
+        // スキップ後のページ遷移を待機
+        await this.page.waitForLoadState('domcontentloaded')
+        return
+      }
     } catch {
-      // スキップする文言リンクが表示されない場合は何もしない
+      // CAが表示されない、またはスキップリンクが見つからない場合
       console.log('ℹ️ ログイン後CAは表示されませんでした')
     }
   }
