@@ -219,29 +219,29 @@ export class M3SPLoginPage extends BasePage {
    * @private
    * @description
    * - ログイン後に表示される可能性のあるCA広告をスキップ
-   * - 「スキップする」または「あとで確認する」リンクが存在する場合のみクリック
+   * - CAモーダルが表示されるまで短時間待機し、表示された場合のみスキップ処理を実行
+   * - SP版では .after-login-sp_btn 内の「スキップする」リンクをクリック
    */
   private async skipPostLoginCA(): Promise<void> {
     try {
-      // 「スキップする」リンクを探す
-      const skipLink = this.page.getByText('スキップする')
+      // CAモーダルのコンテナが表示されるか確認（短時間待機）
+      const caModal = this.page.locator('.after-login-sp_wrap')
+      await caModal.waitFor({ state: 'visible', timeout: 3000 })
+
+      // 「スキップする」リンクを探す（CAモーダル内の.after-login-sp_btnの中）
+      const skipLink = this.page.locator('.after-login-sp_btn a:has-text("スキップする")')
+
       if (await skipLink.isVisible()) {
         await skipLink.click()
-        return
-      }
-    } catch {
-      // スキップするリンクが見つからない場合は次へ
-    }
+        console.log('✅ ログイン後CAをスキップしました')
 
-    try {
-      // 「あとで確認する」リンクを探す
-      const laterLink = this.page.getByText('あとで確認する')
-      if (await laterLink.isVisible()) {
-        await laterLink.click()
+        // スキップ後のページ遷移を待機
+        await this.page.waitForLoadState('domcontentloaded')
         return
       }
     } catch {
-      // あとで確認するリンクも見つからない場合は何もしない
+      // CAモーダルが表示されない、またはスキップリンクが見つからない場合
+      console.log('ℹ️ ログイン後CAは表示されませんでした')
     }
   }
 
