@@ -13,7 +13,11 @@ export default defineConfig({
   testDir: './testcase', // テストケースのディレクトリ
   outputDir: 'test-results',
   testMatch: '**/*.spec.ts',
-  reporter: [['list'], ['html', { open: 'never' }]],
+  reporter: [
+    ['list'],
+    ['html', { open: 'never' }],
+    ['./playwright-html-dump-reporter.ts'], // 失敗時のHTML構造を自動保存
+  ],
 
   // グローバルセットアップ: 全テスト実行前に1回だけ認証を実行
   globalSetup: require.resolve('./testcase/auth.setup.ts'),
