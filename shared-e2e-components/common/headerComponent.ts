@@ -14,13 +14,13 @@ import { Page, Locator } from '@playwright/test'
  *
  * ## Playwright推奨パターンに準拠
  * - コンストラクタで全Locatorをreadonly propertyとして一括初期化
- * - パフォーマンス向上：要素参照が固定され、毎回の評価が不要
+ * - Locatorは「定義」であり、実際の検索はアクションメソッド呼び出し時に実行される
  * - 可読性向上：プロパティとして明示的に定義
  * - 型安全性：TypeScriptによる厳格な型チェック
  *
  * ## セレクタ選択の改善点
  * - **アクセシビリティ重視**: WAI-ARIAの役割、ラベル、alt属性を優先
- * - **段階的フォールバック**: 役割ベース → data-testid → CSSセレクタの順で試行
+ * - **`.or()`による段階的フォールバック**: 役割ベース → 属性ベース → CSSセレクタの順で試行
  * - **保守性向上**: セマンティックな意味に基づく要素特定で変更に強い実装
  */
 export class HeaderComponent {
@@ -53,106 +53,79 @@ export class HeaderComponent {
   constructor(page: Page) {
     this.page = page
 
-    // ヘルパー関数：段階的セレクタ戦略を実行
-    const trySelectors = (strategies: (() => Locator)[]): Locator => {
-      for (const strategy of strategies) {
-        try {
-          return strategy()
-        } catch {
-          continue
-        }
-      }
-      // 全ての戦略が失敗した場合、最後の戦略を返す
-      return strategies[strategies.length - 1]()
-    }
-
     // Atlas ヘッダー全体（役割ベースセレクタ対応）
     // 注: M3.comのヘッダーにはrole="banner"が設定されていないため、
     // 他の要素で代替（heading "m3.com"の存在で確認）
     this.atlasHeader = page.getByRole('heading', { name: 'm3.com', level: 1 })
 
     // ユーザー名表示要素（M3共通）（役割ベースセレクタ対応）
-    // 注: banner内ではなく、ページ全体から検索
-    this.userName = trySelectors([
-      () => page.getByRole('button', { name: /先生|さん|様/ }),
-      () => page.locator('.atlas-header__username'),
-      () => page.locator('.atlas-header__name')
-    ])
+    // 注: .or()を使って複数のセレクタを試行（Playwright推奨）
+    // .first()で最初の要素を選択（strict mode違反を回避）
+    this.userName = page.getByRole('button', { name: /先生|さん|様/ })
+      .or(page.locator('.atlas-header__username'))
+      .or(page.locator('.atlas-header__name'))
+      .first()
 
     // ユーザー情報ドロップダウンエリア（役割ベースセレクタ対応）
-    this.userInfoBox = trySelectors([
-      () => page.getByRole('menu'),
-      () => page.locator('[role="menu"]'),
-      () => page.locator('.atlas-header__infobox')
-    ])
+    this.userInfoBox = page.getByRole('menu')
+      .or(page.locator('[role="menu"]'))
+      .or(page.locator('.atlas-header__infobox'))
 
     // 会員ステータス表示（役割ベースセレクタ対応）
-    this.memberStatus = trySelectors([
-      () => page.getByText(/ブロンズ会員|シルバー会員|ゴールド会員|プラチナ会員/).first(),
-      () => page.locator('.atlas-header__point__status').first()
-    ])
+    // .first()で最初の要素を選択（複数マッチする場合に対応）
+    this.memberStatus = page.getByText(/ブロンズ会員|シルバー会員|ゴールド会員|プラチナ会員/)
+      .or(page.locator('.atlas-header__point__status'))
+      .first()
 
     // ポイント情報エリア全体
     this.pointInfo = page.locator('.atlas-header__point')
 
     // ポイント数表示（役割ベースセレクタ対応）
-    this.pointAmount = trySelectors([
-      () => page.getByText(/\d+p/),
-      () => page.locator('[title="ポイント商品"]').locator('span'),
-      () => page.locator('.atlas-header__point__amount')
-    ])
+    // .first()で最初の要素を選択（複数マッチする場合に対応）
+    this.pointAmount = page.getByText(/\d+p/)
+      .or(page.locator('[title="ポイント商品"]').locator('span'))
+      .or(page.locator('.atlas-header__point__amount'))
+      .first()
 
     // アクション情報エリア全体
     this.actionInfo = page.locator('.atlas-header__action')
 
     // アクション数表示（役割ベースセレクタ対応）
-    this.actionAmount = trySelectors([
-      () => page.locator('[title="アクションとは"]').locator('span').first(),
-      () => page.locator('.atlas-header__action .atlas-header__point__status')
-    ])
+    // .first()で最初の要素を選択（複数マッチする場合に対応）
+    this.actionAmount = page.locator('[title="アクションとは"]').locator('span')
+      .or(page.locator('.atlas-header__action .atlas-header__point__status'))
+      .first()
 
     // メッセージ・詳細サービスアイコン（役割ベースセレクタ対応）
-    this.serviceDetail = trySelectors([
-      () => page.locator('[title="未読のメッセージに遷移します"]'),
-      () => page.locator('.atlas-header__service-detail')
-    ])
+    this.serviceDetail = page.locator('[title="未読のメッセージに遷移します"]')
+      .or(page.locator('.atlas-header__service-detail'))
 
     // メッセージ未読バッジ
     this.messagesBadge = page.locator('.atlas-header__service-detail .atlas-header__badge')
 
     // Web講演会サービスアイコン（役割ベースセレクタ対応）
-    this.serviceConference = trySelectors([
-      () => page.locator('[title="Web講演会"]'),
-      () => page.locator('.atlas-header__service-conference')
-    ])
+    this.serviceConference = page.locator('[title="Web講演会"]')
+      .or(page.locator('.atlas-header__service-conference'))
 
     // アンケートサービスアイコン（役割ベースセレクタ対応）
-    this.serviceSurvey = trySelectors([
-      () => page.locator('[title="アンケート"]'),
-      () => page.locator('.atlas-header__service-survey')
-    ])
+    this.serviceSurvey = page.locator('[title="アンケート"]')
+      .or(page.locator('.atlas-header__service-survey'))
 
     // キャンペーンサービスアイコン（役割ベースセレクタ対応）
-    this.serviceCampaign = trySelectors([
-      () => page.locator('[title="キャンペーン"]'),
-      () => page.locator('.atlas-header__service-campaign')
-    ])
+    this.serviceCampaign = page.locator('[title="キャンペーン"]')
+      .or(page.locator('.atlas-header__service-campaign'))
 
     // ToDoサービスアイコン（役割ベースセレクタ対応）
-    this.serviceTodo = trySelectors([
-      () => page.locator('[title="ToDo"]'),
-      () => page.locator('.atlas-header__service-todo')
-    ])
+    this.serviceTodo = page.locator('[title="ToDo"]')
+      .or(page.locator('.atlas-header__service-todo'))
 
     // ToDoバッジ
     this.todoBadge = page.locator('.atlas-header__service-todo .atlas-header__badge')
 
     // 検索機能（役割ベースセレクタ対応）
-    this.searchArea = trySelectors([
-      () => page.getByRole('search'),
-      () => page.getByRole('button', { name: /検索/ }),
-      () => page.locator('.atlas-header__search')
-    ])
+    this.searchArea = page.getByRole('search')
+      .or(page.getByRole('button', { name: /検索/ }))
+      .or(page.locator('.atlas-header__search'))
   }
 
   // 便利メソッド群
@@ -175,45 +148,32 @@ export class HeaderComponent {
   /**
    * ログイン状態の確認（役割ベースセレクタ対応）
    *
-   * @param timeout タイムアウト時間（ミリ秒）
+   * @param timeout タイムアウト時間（ミリ秒、デフォルト: 2000）
    * @returns ログイン済みの場合true
    * @description
-   * ユーザー名要素の表示でログイン状態を判定
+   * ユーザー名要素の可視性でログイン状態を判定。
+   * 未ログイン状態を即座に判定するため、短いタイムアウトを使用。
    */
-  async isLoggedIn(timeout: number = 5000): Promise<boolean> {
-    try {
-      await this.userName.waitFor({ state: 'visible', timeout })
-      const usernameText = await this.userName.textContent()
-
-      if (usernameText && usernameText.trim()) {
-        return true
-      }
-    } catch (error: unknown) {
-      // ログイン状態を確認できない場合はfalseを返す
-    }
-
-    return false
+  async isLoggedIn(timeout: number = 2000): Promise<boolean> {
+    return await this.userName.isVisible({ timeout }).catch(() => false)
   }
 
   /**
    * ユーザー名の取得（役割ベースセレクタ対応）
    *
-   * @param timeout タイムアウト時間（ミリ秒）
+   * @param timeout タイムアウト時間（ミリ秒、デフォルト: 2000）
    * @returns ユーザー名（取得できない場合は空文字）
+   * @description
+   * 要素の可視性を確認してからテキストを取得。
+   * 短いタイムアウトで即座に判定。
    */
-  async getUserName(timeout: number = 5000): Promise<string> {
-    try {
-      await this.userName.waitFor({ state: 'visible', timeout })
-      const text = await this.userName.textContent()
-
-      if (text && text.trim()) {
-        return text.trim()
-      }
-    } catch (error: unknown) {
-      // ユーザー名を取得できない場合は空文字を返す
+  async getUserName(timeout: number = 2000): Promise<string> {
+    const isVisible = await this.userName.isVisible({ timeout }).catch(() => false)
+    if (!isVisible) {
+      return ''
     }
-
-    return ''
+    const text = await this.userName.textContent()
+    return text?.trim() || ''
   }
 
   /**
@@ -330,6 +290,30 @@ export class HeaderComponent {
       return ''
     }
   }
+
+  /**
+   * ログアウト処理
+   *
+   * @description
+   * ユーザー名をクリックしてドロップダウンメニューを開き、
+   * ログアウトリンクをクリックしてログアウトを実行。
+   * SPA対応のため、ユーザー名要素が非表示になることでログアウト完了を判定。
+   *
+   * @throws ログアウト処理に失敗した場合にエラーをスロー
+   */
+  async performLogout(): Promise<void> {
+    // ユーザー名をクリックしてドロップダウンメニューを開く
+    await this.userName.waitFor({ state: 'visible' })
+    await this.userName.click()
+
+    // ログアウトリンクをクリック
+    const logoutLink = this.page.getByRole('link', { name: 'ログアウト' })
+    await logoutLink.waitFor({ state: 'visible' })
+    await logoutLink.click()
+
+    // ログアウト完了を待機（ユーザー名が非表示になることを確認）
+    await this.userName.waitFor({ state: 'hidden' })
+  }
 }
 
 /**
@@ -343,32 +327,27 @@ export class HeaderComponent {
  * ### コンストラクタでの一括初期化
  * ```typescript
  * constructor(page: Page) {
- *   this.page = page;
- *   this.userName = page.getByRole('button', { name: /先生|さん|様/ });
- *   // 全てのLocatorをコンストラクタで初期化
+ *   this.page = page
+ *   // .or()を使って複数のセレクタを定義（Playwright推奨）
+ *   this.userName = page.getByRole('button', { name: /先生|さん|様/ })
+ *     .or(page.locator('.atlas-header__username'))
+ *     .or(page.locator('.atlas-header__name'))
  * }
  * ```
  *
  * ### 利点
- * - **パフォーマンス向上**: Locatorが初期化時に一度だけ評価される
+ * - **Locatorは「定義」**: 実際の検索はアクションメソッド呼び出し時に実行される
  * - **可読性向上**: プロパティとして明示的に定義され、コード補完が効く
  * - **型安全性**: TypeScriptの型チェックが厳格に機能
  * - **保守性向上**: 要素定義が一箇所に集約され、変更が容易
  *
- * ## 段階的セレクタ戦略
+ * ## `.or()`による段階的セレクタ戦略
  *
- * ### trySelectorsヘルパー関数
+ * ### 使用方法
  * ```typescript
- * const trySelectors = (strategies: (() => Locator)[]): Locator => {
- *   for (const strategy of strategies) {
- *     try {
- *       return strategy()
- *     } catch {
- *       continue
- *     }
- *   }
- *   return strategies[strategies.length - 1]()
- * }
+ * this.userName = page.getByRole('button', { name: /先生|さん|様/ })
+ *   .or(page.locator('.atlas-header__username'))
+ *   .or(page.locator('.atlas-header__name'))
  * ```
  *
  * ### セレクタ優先順位
@@ -376,24 +355,29 @@ export class HeaderComponent {
  * 2. **属性ベース**: `[title="..."]`, `[data-testid="..."]`
  * 3. **CSSセレクタ**: `.class-name`（最後の手段）
  *
+ * ### 特徴
+ * - Playwrightが自動的に最初にマッチした要素を使用
+ * - try-catchは不要（Locatorは定義時にエラーを投げない）
+ * - 動的なDOM変更にも対応（各アクションメソッド呼び出し時に再評価）
+ *
  * ## 使用例
  *
  * ```typescript
- * import { HeaderComponent } from '@/shared-e2e-components/common/headerComponent';
+ * import { HeaderComponent } from '@/shared-e2e-components/common/headerComponent'
  *
  * test('ヘッダー要素の検証', async ({ page }) => {
- *   const header = new HeaderComponent(page);
+ *   const header = new HeaderComponent(page)
  *
- *   // ログイン状態確認
- *   const isLoggedIn = await header.isLoggedIn();
- *   expect(isLoggedIn).toBe(true);
+ *   // ログイン状態確認（isVisible()ベースで即座に判定）
+ *   const isLoggedIn = await header.isLoggedIn()
+ *   expect(isLoggedIn).toBe(true)
  *
  *   // ユーザー名取得
- *   const username = await header.getUserName();
- *   console.log(`ログインユーザー: ${username}`);
+ *   const username = await header.getUserName()
+ *   expect(username).toBeTruthy()
  *
- *   // サービスアイコンクリック
- *   await header.clickServiceIcon('todo');
- * });
+ *   // ログアウト（状態変化ベースで完了を待機）
+ *   await header.performLogout()
+ * })
  * ```
  */
