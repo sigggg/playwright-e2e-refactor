@@ -1,5 +1,8 @@
 // 動作確認用スクリプト: Gmail APIの接続・メール取得が正常に動作するかを手動で確認する
 // 実行: npx tsx scripts/check-gmail.ts
+//
+// ⚠️ .env に必要な認証情報（GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN, TEST_EMAIL_ADDRESS）は
+//    全体共有しない。必要な場合は末吉・窪田に確認してください。
 import 'dotenv/config'
 import { google } from 'googleapis'
 
