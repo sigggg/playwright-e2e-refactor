@@ -1,15 +1,115 @@
 # Playwright Test Orchestrators - 作業フローガイド
 
-このディレクトリには、Playwright E2Eテストの作成・移行を自動化する2つのオーケストレーターがあります。
+このディレクトリには、Playwright E2Eテストの作成・移行・修正を自動化する3つのオーケストレーターがあります。
 
 ---
 
-## 📋 2つのオーケストレーター
+## 📋 3つのオーケストレーター
 
 | オーケストレーター | 用途 | 対象 |
 |------------------|------|------|
 | **test-creation-orchestrator.md** | テスト新規作成 | テストケース仕様書からPlaywrightテストを作成 |
 | **mabl-migration-orchestrator.md** | mabl移行 | mablテストをPlaywrightに移行 |
+| **test-modification-orchestrator.md** | テスト修正・追加 | 既存Playwrightテストの修正・追加・品質改善 |
+
+---
+
+## 🤔 どのオーケストレーターを使うべきか？
+
+以下のフローチャートで適切なオーケストレーターを選択してください。
+
+### 判断フロー
+
+```
+質問1: 既存のテストコードはありますか？
+├─ NO → 質問2へ
+└─ YES → test-modification-orchestrator（修正・追加用）
+
+質問2: 元になるmablテストはありますか？
+├─ YES → mabl-migration-orchestrator（mabl移行用）
+└─ NO → test-creation-orchestrator（新規作成用）
+```
+
+### 詳細比較表
+
+| 項目 | test-creation | mabl-migration | test-modification |
+|------|--------------|----------------|------------------|
+| **使用タイミング** | ゼロから新規作成 | mablからの移行 | 既存テストの修正・追加 |
+| **入力** | テストケース仕様書 | mablプランID/JSON | 既存ファイル+修正指示 |
+| **前提条件** | テストコード不要 | mabl原本が必要 | 既存テストコード必須 |
+| **出力** | 新規テストコード一式 | 移行済みテストコード | 修正済みテストコード |
+| **主な用途** | 新機能のテスト作成 | E2Eツール移行 | バグ修正、機能追加、品質改善 |
+| **Phase 0** | 初期化・準備 | 初期化・準備 | 既存コード分析・修正計画 |
+| **Phase 1** | コード生成 | コード生成 | 修正実施（タイプ別分岐） |
+| **ユーザー承認** | Phase 0.5で内容確認 | Phase 0.5で内容確認 | Phase 0で修正計画確認 |
+
+### 具体例で理解する
+
+#### ケース1: 新しい機能のテストを作る
+**→ test-creation-orchestrator を使用**
+
+```
+状況: ログイン機能の仕様書があり、テストコードがまだない
+入力: test-case-spec/login-spec.md（仕様書）
+出力:
+  - tests/login/login.spec.ts（テストファイル）
+  - src/login/pages/LoginPage.ts（Page Object）
+  - README.md, TEST_DETAILS.md（ドキュメント）
+```
+
+#### ケース2: mablで動いているテストをPlaywrightに移行
+**→ mabl-migration-orchestrator を使用**
+
+```
+状況: mablでE2Eテストを運用中、Playwrightに移行したい
+入力: mablプランID: 12345 または mabl-export/daily-mission.json
+出力:
+  - 移行済みPlaywrightテスト
+  - mabl-migration-report.md（移行レポート）
+  - セレクタ変換表
+```
+
+#### ケース3: 既存のテストにパスワードリセット機能を追加
+**→ test-modification-orchestrator を使用**
+
+```
+状況: tests/login/login.spec.ts が既にあり、新機能を追加したい
+入力:
+  - 既存ファイル: tests/login/login.spec.ts, src/login/pages/LoginPage.ts
+  - 追加内容: 「パスワードリセットリンクのテストを追加」
+出力:
+  - 修正済み tests/login/login.spec.ts（新テストケース追加）
+  - 修正済み src/login/pages/LoginPage.ts（passwordResetLink追加）
+  - 修正レポート（Before/After差分）
+```
+
+#### ケース4: 既存テストのセレクタをgetByRoleに変更
+**→ test-modification-orchestrator を使用**
+
+```
+状況: 既存テストのセレクタがlocator('#id')で脆弱
+入力:
+  - 既存ファイル: tests/login/login.spec.ts
+  - 修正内容: 「セレクタを役割ベース（getByRole）に変更」
+出力:
+  - 修正済み tests/login/login.spec.ts
+  - 修正済み src/login/pages/LoginPage.ts
+  - 品質レポート（23/23項目合格）
+```
+
+#### ケース5: 既存テストが失敗しているので修正
+**→ test-modification-orchestrator を使用**
+
+```
+状況: tests/dashboard/header.spec.ts が失敗している
+入力:
+  - 失敗テストファイル: tests/dashboard/header.spec.ts
+  - エラー内容: Error: Locator 'button#logout' not found
+出力:
+  - 修正済み tests/dashboard/header.spec.ts
+  - デバッグ証跡（スクリーンショット、Trace）
+  - 修正レポート
+```
 
 ---
 
@@ -725,11 +825,82 @@ mabl-export/daily-mission.json を Playwright に移行し、
 
 ---
 
+## 🔧 テスト修正・追加フロー（test-modification-orchestrator）
+
+### 📥 入力
+
+- **修正対象の既存ファイル**
+- **修正内容の指示**（バグ修正 / 機能追加 / 品質改善等）
+- **追加するテストケース仕様**（機能追加の場合）
+
+### 🎯 全体の流れ（7フェーズ）
+
+```
+Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7
+  ↓         ↓         ↓         ↓         ↓         ↓         ↓         ↓
+分析      修正      実行    デバッグ   品質    仕様     更新     完了
+計画                        ↑         ↓      ↓
+                           └─────3回まで─┘
+                                 ↓
+                             再修正へ
+```
+
+### 📋 対応する修正タイプ
+
+| タイプ | 処理方法 | 使用エージェント |
+|--------|---------|----------------|
+| **バグ修正** | Debug Engineに委譲 | playwright-debug-fix-engine |
+| **機能追加** | Code Generator（追加モード）起動 | playwright-code-generator |
+| **品質改善** | 直接Edit toolで修正 | - |
+| **セレクタ変更** | 直接Edit toolで修正 | - |
+
+### 🚀 使用例
+
+#### セレクタ改善
+
+```
+Task tool で test-modification-orchestrator エージェントを起動。
+
+【タスク】
+tests/login/login.spec.ts のセレクタを役割ベース（getByRole等）に変更してください。
+
+各フェーズの切り替え時に私に許可を求めず、ノンストップで実行してください。
+```
+
+#### 機能追加
+
+```
+Task tool で test-modification-orchestrator エージェントを起動。
+
+【タスク】
+tests/login/login.spec.ts にパスワードリセット機能のテストケースを追加してください。
+
+【追加内容】
+- パスワードリセットリンクをクリック
+- リセットメール送信確認
+
+各フェーズの切り替え時に私に許可を求めず、ノンストップで実行してください。
+```
+
+#### バグ修正
+
+```
+Task tool で test-modification-orchestrator エージェントを起動。
+
+【タスク】
+tests/dashboard/header.spec.ts が失敗しているので修正してください。
+
+エラー内容:
+Error: Locator 'button#logout' not found
+```
+
+---
+
 ## ⚙️ 自動実行の仕組み
 
 ### ノンストップ実行
 
-両オーケストレーターは、以下のルールで**自律的に**動作します：
+3つのオーケストレーターは、以下のルールで**自律的に**動作します：
 
 1. **Phase間の移動**: ユーザー許可不要で次のPhaseへ進む
 2. **エラー検出時**: 自動的にデバッグエージェント起動（Phase 3）
@@ -748,7 +919,7 @@ mabl-export/daily-mission.json を Playwright に移行し、
 
 ## 📝 成果物の品質保証
 
-両オーケストレーターが生成するテストは、以下の品質基準を満たします：
+3つのオーケストレーターが生成・修正するテストは、以下の品質基準を満たします：
 
 ### ✅ コード品質（Phase 4で保証）
 - CLAUDE.md完全準拠
@@ -769,4 +940,4 @@ mabl-export/daily-mission.json を Playwright に移行し、
 
 ---
 
-**🤖 Playwright E2E Test Automation Orchestrators v2.0**
+**🤖 Playwright E2E Test Automation Orchestrators v3.0**
