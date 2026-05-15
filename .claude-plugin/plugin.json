@@ -1,0 +1,16 @@
+{
+  "name": "playwright-e2e-agents",
+  "description": "PlaywrightE2Eテスト作成オーケストレーターとAgent群",
+  "version": "1.0.0",
+  "author": {
+    "name": "yuichiro-sueyoshi"
+  },
+  "agents": [
+    "./.claude/agents/orchestrators/test-creation-orchestrator.md",
+    "./.claude/agents/code-generation/playwright-code-generator.md",
+    "./.claude/agents/code-generation/playwright-debug-fix-engine.md",
+    "./.claude/agents/code-review/playwright-code-quality-reviewer.md",
+    "./.claude/agents/code-review/playwright-spec-reviewer.md",
+    "./.claude/agents/knowledge/playwright_knowledge_base.md"
+  ]
+}

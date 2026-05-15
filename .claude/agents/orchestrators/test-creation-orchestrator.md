@@ -292,13 +292,22 @@ fi
 
 **実行コマンド**:
 ```bash
-# カレントディレクトリ = プロジェクトルート想定
+# ツールパスの解決（プロジェクトローカル優先 → ユーザーグローバルにフォールバック）
+if [[ -f ".claude/agents/tool/playwright-reviewer-v3.js" ]]; then
+  REVIEWER_TOOL=".claude/agents/tool/playwright-reviewer-v3.js"
+elif [[ -f "$HOME/.claude/agents/tool/playwright-reviewer-v3.js" ]]; then
+  REVIEWER_TOOL="$HOME/.claude/agents/tool/playwright-reviewer-v3.js"
+else
+  echo "Warning: playwright-reviewer-v3.js が見つかりません。Phase 4-2をスキップします。"
+  REVIEWER_TOOL=""
+fi
+
 # ディレクトリ全体のチェック（推奨）
-node .claude/agents/tool/playwright-reviewer-v3.js e2e-{service}/
+[[ -n "$REVIEWER_TOOL" ]] && node "$REVIEWER_TOOL" e2e-{service}/
 
 # または個別ファイルのチェック
-node .claude/agents/tool/playwright-reviewer-v3.js src/{domain}/pages/{PageName}.ts
-node .claude/agents/tool/playwright-reviewer-v3.js tests/{service}/{testname}.spec.ts
+[[ -n "$REVIEWER_TOOL" ]] && node "$REVIEWER_TOOL" src/{domain}/pages/{PageName}.ts
+[[ -n "$REVIEWER_TOOL" ]] && node "$REVIEWER_TOOL" tests/{service}/{testname}.spec.ts
 ```
 
 **チェック項目（23項目）**:
