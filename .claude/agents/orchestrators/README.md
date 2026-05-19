@@ -43,73 +43,15 @@
 | **Phase 1** | コード生成 | コード生成 | 修正実施（タイプ別分岐） |
 | **ユーザー承認** | Phase 0.5で内容確認 | Phase 0.5で内容確認 | Phase 0で修正計画確認 |
 
-### 具体例で理解する
+### ユースケース早見表
 
-#### ケース1: 新しい機能のテストを作る
-**→ test-creation-orchestrator を使用**
-
-```
-状況: ログイン機能の仕様書があり、テストコードがまだない
-入力: test-case-spec/login-spec.md（仕様書）
-出力:
-  - tests/login/login.spec.ts（テストファイル）
-  - src/login/pages/LoginPage.ts（Page Object）
-  - README.md, TEST_DETAILS.md（ドキュメント）
-```
-
-#### ケース2: mablで動いているテストをPlaywrightに移行
-**→ mabl-migration-orchestrator を使用**
-
-```
-状況: mablでE2Eテストを運用中、Playwrightに移行したい
-入力: mablプランID: 12345 または mabl-export/daily-mission.json
-出力:
-  - 移行済みPlaywrightテスト
-  - mabl-migration-report.md（移行レポート）
-  - セレクタ変換表
-```
-
-#### ケース3: 既存のテストにパスワードリセット機能を追加
-**→ test-modification-orchestrator を使用**
-
-```
-状況: tests/login/login.spec.ts が既にあり、新機能を追加したい
-入力:
-  - 既存ファイル: tests/login/login.spec.ts, src/login/pages/LoginPage.ts
-  - 追加内容: 「パスワードリセットリンクのテストを追加」
-出力:
-  - 修正済み tests/login/login.spec.ts（新テストケース追加）
-  - 修正済み src/login/pages/LoginPage.ts（passwordResetLink追加）
-  - 修正レポート（Before/After差分）
-```
-
-#### ケース4: 既存テストのセレクタをgetByRoleに変更
-**→ test-modification-orchestrator を使用**
-
-```
-状況: 既存テストのセレクタがlocator('#id')で脆弱
-入力:
-  - 既存ファイル: tests/login/login.spec.ts
-  - 修正内容: 「セレクタを役割ベース（getByRole）に変更」
-出力:
-  - 修正済み tests/login/login.spec.ts
-  - 修正済み src/login/pages/LoginPage.ts
-  - 品質レポート（23/23項目合格）
-```
-
-#### ケース5: 既存テストが失敗しているので修正
-**→ test-modification-orchestrator を使用**
-
-```
-状況: tests/dashboard/header.spec.ts が失敗している
-入力:
-  - 失敗テストファイル: tests/dashboard/header.spec.ts
-  - エラー内容: Error: Locator 'button#logout' not found
-出力:
-  - 修正済み tests/dashboard/header.spec.ts
-  - デバッグ証跡（スクリーンショット、Trace）
-  - 修正レポート
-```
+| ケース | 状況 | 使用オーケストレーター |
+|--------|------|---------------------|
+| **新規作成** | ログイン機能の仕様書あり、テストコード未作成 | test-creation-orchestrator |
+| **mabl移行** | mablでE2E運用中、Playwrightに移行したい | mabl-migration-orchestrator |
+| **機能追加** | 既存テストにパスワードリセット機能を追加 | test-modification-orchestrator |
+| **品質改善** | 既存セレクタをlocator('#id')からgetByRoleに変更 | test-modification-orchestrator |
+| **バグ修正** | 既存テストが失敗（Error: Locator not found） | test-modification-orchestrator |
 
 ---
 
@@ -398,32 +340,6 @@ node playwright-reviewer-v3.js tests/{service}/*.spec.ts
 - Critical/High問題: 0件
 - Medium/Low問題: TEST_DETAILS.mdに記録済み
 
-**レビュー例（優先度別）**:
-```markdown
-## 仕様完全性レビュー結果
-
-### 総合スコア: 85% ⚠️
-
-### 実装状況
-- 解釈精度: 100% (4/4)
-- 確認事項実装率: 75% (3/4)
-- README/TEST_DETAILS一致率: 90%
-
-### 検出された実装漏れ（優先度別）
-
-#### 🔄 必ず修正（Critical/High）
-1. **High**: 確認事項3「パスワード入力欄がマスク表示であること」が未実装
-   - 推奨修正: LoginPage.tsにpasswordInput追加、spec側で検証
-
-#### 📝 記録のみ（Medium/Low - 修正しない）
-1. **Medium**: README.mdの環境変数説明が不足
-   → TEST_DETAILS.mdに記載
-2. **Low**: エラーケースのテストが不足
-   → TEST_DETAILS.mdの「今後の改善案」に記載
-
-→ Phase 1に差し戻して、High問題を修正します（1回目）
-```
-
 **不合格時**:
 → Phase 1（再生成）へ差し戻し（最大3回まで）
 
@@ -692,38 +608,6 @@ npx playwright test tests/{service}/*.spec.ts
 **成功条件（Phase 6へ進む）**:
 - Critical/High問題: 0件
 - Medium/Low問題: 記録済み
-
-**レビュー例（優先度別）**:
-```markdown
-## mabl移行完全性レビュー結果
-
-### 総合スコア: 88% ⚠️
-
-### 移行状況
-- mabl原本ステップ数: 15
-- 移行済みステップ数: 13
-- mabl原本アサーション数: 8
-- 移行済みアサーション数: 7
-- セレクタ変換率: 80% (役割ベース化)
-
-### 検出された移行漏れ（優先度別）
-
-#### 🔄 必ず修正（Critical/High）
-1. **High**: mablステップ12「ログアウト確認」が未移行
-   → Phase 1に差し戻して実装
-
-2. **High**: mablアサーション「エラーメッセージ表示確認」が未移行
-   → Phase 1に差し戻して実装
-
-#### 📝 記録のみ（Medium/Low - 修正しない）
-1. **Medium**: セレクタ変換の改善余地（3箇所でCSSセレクタ残存）
-   → TEST_DETAILS.mdに記載（アプリ側のaria-label不足のため）
-
-2. **Low**: mablステップ「ページスクロール」の省略
-   → mabl-migration-report.mdに記載（Playwright自動スクロール機能で代替）
-
-→ Phase 1に差し戻して、High問題を修正します（1回目）
-```
 
 **不合格時**:
 → Phase 1（再生成）へ差し戻し（最大3回まで）
