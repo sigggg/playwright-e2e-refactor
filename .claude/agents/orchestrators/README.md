@@ -1,15 +1,57 @@
 # Playwright Test Orchestrators - 作業フローガイド
 
-このディレクトリには、Playwright E2Eテストの作成・移行を自動化する2つのオーケストレーターがあります。
+このディレクトリには、Playwright E2Eテストの作成・移行・修正を自動化する3つのオーケストレーターがあります。
 
 ---
 
-## 📋 2つのオーケストレーター
+## 📋 3つのオーケストレーター
 
 | オーケストレーター | 用途 | 対象 |
 |------------------|------|------|
 | **test-creation-orchestrator.md** | テスト新規作成 | テストケース仕様書からPlaywrightテストを作成 |
 | **mabl-migration-orchestrator.md** | mabl移行 | mablテストをPlaywrightに移行 |
+| **test-modification-orchestrator.md** | テスト修正・追加 | 既存Playwrightテストの修正・追加・品質改善 |
+
+---
+
+## 🤔 どのオーケストレーターを使うべきか？
+
+以下のフローチャートで適切なオーケストレーターを選択してください。
+
+### 判断フロー
+
+```
+質問1: 既存のテストコードはありますか？
+├─ NO → 質問2へ
+└─ YES → test-modification-orchestrator（修正・追加用）
+
+質問2: 元になるmablテストはありますか？
+├─ YES → mabl-migration-orchestrator（mabl移行用）
+└─ NO → test-creation-orchestrator（新規作成用）
+```
+
+### 詳細比較表
+
+| 項目 | test-creation | mabl-migration | test-modification |
+|------|--------------|----------------|------------------|
+| **使用タイミング** | ゼロから新規作成 | mablからの移行 | 既存テストの修正・追加 |
+| **入力** | テストケース仕様書 | mablプランID/JSON | 既存ファイル+修正指示 |
+| **前提条件** | テストコード不要 | mabl原本が必要 | 既存テストコード必須 |
+| **出力** | 新規テストコード一式 | 移行済みテストコード | 修正済みテストコード |
+| **主な用途** | 新機能のテスト作成 | E2Eツール移行 | バグ修正、機能追加、品質改善 |
+| **Phase 0** | 初期化・準備 | 初期化・準備 | 既存コード分析・修正計画 |
+| **Phase 1** | コード生成 | コード生成 | 修正実施（タイプ別分岐） |
+| **ユーザー承認** | Phase 0.5で内容確認 | Phase 0.5で内容確認 | Phase 0で修正計画確認 |
+
+### ユースケース早見表
+
+| ケース | 状況 | 使用オーケストレーター |
+|--------|------|---------------------|
+| **新規作成** | ログイン機能の仕様書あり、テストコード未作成 | test-creation-orchestrator |
+| **mabl移行** | mablでE2E運用中、Playwrightに移行したい | mabl-migration-orchestrator |
+| **機能追加** | 既存テストにパスワードリセット機能を追加 | test-modification-orchestrator |
+| **品質改善** | 既存セレクタをlocator('#id')からgetByRoleに変更 | test-modification-orchestrator |
+| **バグ修正** | 既存テストが失敗（Error: Locator not found） | test-modification-orchestrator |
 
 ---
 
@@ -298,32 +340,6 @@ node playwright-reviewer-v3.js tests/{service}/*.spec.ts
 - Critical/High問題: 0件
 - Medium/Low問題: TEST_DETAILS.mdに記録済み
 
-**レビュー例（優先度別）**:
-```markdown
-## 仕様完全性レビュー結果
-
-### 総合スコア: 85% ⚠️
-
-### 実装状況
-- 解釈精度: 100% (4/4)
-- 確認事項実装率: 75% (3/4)
-- README/TEST_DETAILS一致率: 90%
-
-### 検出された実装漏れ（優先度別）
-
-#### 🔄 必ず修正（Critical/High）
-1. **High**: 確認事項3「パスワード入力欄がマスク表示であること」が未実装
-   - 推奨修正: LoginPage.tsにpasswordInput追加、spec側で検証
-
-#### 📝 記録のみ（Medium/Low - 修正しない）
-1. **Medium**: README.mdの環境変数説明が不足
-   → TEST_DETAILS.mdに記載
-2. **Low**: エラーケースのテストが不足
-   → TEST_DETAILS.mdの「今後の改善案」に記載
-
-→ Phase 1に差し戻して、High問題を修正します（1回目）
-```
-
 **不合格時**:
 → Phase 1（再生成）へ差し戻し（最大3回まで）
 
@@ -593,38 +609,6 @@ npx playwright test tests/{service}/*.spec.ts
 - Critical/High問題: 0件
 - Medium/Low問題: 記録済み
 
-**レビュー例（優先度別）**:
-```markdown
-## mabl移行完全性レビュー結果
-
-### 総合スコア: 88% ⚠️
-
-### 移行状況
-- mabl原本ステップ数: 15
-- 移行済みステップ数: 13
-- mabl原本アサーション数: 8
-- 移行済みアサーション数: 7
-- セレクタ変換率: 80% (役割ベース化)
-
-### 検出された移行漏れ（優先度別）
-
-#### 🔄 必ず修正（Critical/High）
-1. **High**: mablステップ12「ログアウト確認」が未移行
-   → Phase 1に差し戻して実装
-
-2. **High**: mablアサーション「エラーメッセージ表示確認」が未移行
-   → Phase 1に差し戻して実装
-
-#### 📝 記録のみ（Medium/Low - 修正しない）
-1. **Medium**: セレクタ変換の改善余地（3箇所でCSSセレクタ残存）
-   → TEST_DETAILS.mdに記載（アプリ側のaria-label不足のため）
-
-2. **Low**: mablステップ「ページスクロール」の省略
-   → mabl-migration-report.mdに記載（Playwright自動スクロール機能で代替）
-
-→ Phase 1に差し戻して、High問題を修正します（1回目）
-```
-
 **不合格時**:
 → Phase 1（再生成）へ差し戻し（最大3回まで）
 
@@ -725,11 +709,82 @@ mabl-export/daily-mission.json を Playwright に移行し、
 
 ---
 
+## 🔧 テスト修正・追加フロー（test-modification-orchestrator）
+
+### 📥 入力
+
+- **修正対象の既存ファイル**
+- **修正内容の指示**（バグ修正 / 機能追加 / 品質改善等）
+- **追加するテストケース仕様**（機能追加の場合）
+
+### 🎯 全体の流れ（7フェーズ）
+
+```
+Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7
+  ↓         ↓         ↓         ↓         ↓         ↓         ↓         ↓
+分析      修正      実行    デバッグ   品質    仕様     更新     完了
+計画                        ↑         ↓      ↓
+                           └─────3回まで─┘
+                                 ↓
+                             再修正へ
+```
+
+### 📋 対応する修正タイプ
+
+| タイプ | 処理方法 | 使用エージェント |
+|--------|---------|----------------|
+| **バグ修正** | Debug Engineに委譲 | playwright-debug-fix-engine |
+| **機能追加** | Code Generator（追加モード）起動 | playwright-code-generator |
+| **品質改善** | 直接Edit toolで修正 | - |
+| **セレクタ変更** | 直接Edit toolで修正 | - |
+
+### 🚀 使用例
+
+#### セレクタ改善
+
+```
+Task tool で test-modification-orchestrator エージェントを起動。
+
+【タスク】
+tests/login/login.spec.ts のセレクタを役割ベース（getByRole等）に変更してください。
+
+各フェーズの切り替え時に私に許可を求めず、ノンストップで実行してください。
+```
+
+#### 機能追加
+
+```
+Task tool で test-modification-orchestrator エージェントを起動。
+
+【タスク】
+tests/login/login.spec.ts にパスワードリセット機能のテストケースを追加してください。
+
+【追加内容】
+- パスワードリセットリンクをクリック
+- リセットメール送信確認
+
+各フェーズの切り替え時に私に許可を求めず、ノンストップで実行してください。
+```
+
+#### バグ修正
+
+```
+Task tool で test-modification-orchestrator エージェントを起動。
+
+【タスク】
+tests/dashboard/header.spec.ts が失敗しているので修正してください。
+
+エラー内容:
+Error: Locator 'button#logout' not found
+```
+
+---
+
 ## ⚙️ 自動実行の仕組み
 
 ### ノンストップ実行
 
-両オーケストレーターは、以下のルールで**自律的に**動作します：
+3つのオーケストレーターは、以下のルールで**自律的に**動作します：
 
 1. **Phase間の移動**: ユーザー許可不要で次のPhaseへ進む
 2. **エラー検出時**: 自動的にデバッグエージェント起動（Phase 3）
@@ -748,7 +803,7 @@ mabl-export/daily-mission.json を Playwright に移行し、
 
 ## 📝 成果物の品質保証
 
-両オーケストレーターが生成するテストは、以下の品質基準を満たします：
+3つのオーケストレーターが生成・修正するテストは、以下の品質基準を満たします：
 
 ### ✅ コード品質（Phase 4で保証）
 - CLAUDE.md完全準拠
@@ -769,4 +824,4 @@ mabl-export/daily-mission.json を Playwright に移行し、
 
 ---
 
-**🤖 Playwright E2E Test Automation Orchestrators v2.0**
+**🤖 Playwright E2E Test Automation Orchestrators v3.0**
