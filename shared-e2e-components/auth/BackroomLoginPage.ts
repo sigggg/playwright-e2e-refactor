@@ -37,11 +37,17 @@ export class BackroomLoginPage extends BasePage {
     // ===== Backroomホームページ =====
     this.backroomLoginButton = page.getByRole('link', { name: 'ログイン' })
 
-    // ===== Cognito認証画面（AWS Cognito特有の重複要素対策で.last()を使用） =====
-    this.cognitoSignInText = page.getByText('Sign in with your username and password').last()
-    this.cognitoUsernameInput = page.locator('#signInFormUsername').last()
-    this.cognitoPasswordInput = page.locator('#signInFormPassword').last()
-    this.cognitoSubmitButton = page.locator('input[name="signInSubmitButton"]').last()
+    // ===== Cognito認証画面 =====
+    // AWS Cognitoはデスクトップ用とモバイル用のフォームを同一DOM内に重複描画し、
+    // ビューポートによって表示される側が切り替わる。PC版・SP版の双方で確実に
+    // 動作させるため、.last()ではなく「表示されている要素」を対象に選択する。
+    this.cognitoSignInText = page
+      .getByText('Sign in with your username and password')
+      .filter({ visible: true })
+      .first()
+    this.cognitoUsernameInput = page.locator('#signInFormUsername').filter({ visible: true }).first()
+    this.cognitoPasswordInput = page.locator('#signInFormPassword').filter({ visible: true }).first()
+    this.cognitoSubmitButton = page.locator('input[name="signInSubmitButton"]').filter({ visible: true }).first()
 
     // ===== LDAP認証画面 =====
     this.ldapHeading = page.getByRole('heading', { name: 'M3 スタッフ OpenID 認証 (QA環境)' })
