@@ -89,7 +89,11 @@ export class M3LoginPage extends BasePage {
    */
   private async ensureLoginFormVisible(): Promise<void> {
     try {
-      const loginIdField = this.page.getByPlaceholder('ログインID')
+      // ログインID入力フィールド（name属性ベースセレクタ）
+      // 注: ログインページのUIによりplaceholderの有無が異なる
+      //     （/open/login はplaceholderあり、/login?promotionCode=... はplaceholderなし）。
+      //     name="loginId" はいずれのUIにも共通して存在するため、name属性ベースで統一する
+      const loginIdField = this.page.locator('[name="loginId"]')
       await loginIdField.waitFor({ state: 'visible' })
       return
     } catch (error: unknown) {
@@ -133,13 +137,13 @@ export class M3LoginPage extends BasePage {
    */
   private async fillLoginCredentials(credentials: LoginCredentials): Promise<void> {
     try {
-      // ログインID入力フィールド（placeholder-basedセレクタ）
-      const loginIdField = this.page.getByPlaceholder('ログインID')
+      // ログインID入力フィールド（name属性ベースセレクタ）
+      const loginIdField = this.page.locator('[name="loginId"]')
       await loginIdField.waitFor({ state: 'visible' })
       await loginIdField.fill(credentials.username)
 
-      // パスワード入力フィールド（placeholder-basedセレクタ）
-      const passwordField = this.page.getByPlaceholder('パスワード')
+      // パスワード入力フィールド（name属性ベースセレクタ）
+      const passwordField = this.page.locator('[name="password"]')
       await passwordField.waitFor({ state: 'visible' })
       await passwordField.fill(credentials.password)
 
