@@ -233,7 +233,6 @@ export class M3LoginPage extends BasePage {
 
       if (await skipLink.isVisible()) {
         await skipLink.click()
-        console.log('✅ ログイン後CAをスキップしました')
 
         // スキップ後のページ遷移を待機
         await this.page.waitForLoadState('domcontentloaded')
@@ -241,7 +240,6 @@ export class M3LoginPage extends BasePage {
       }
     } catch {
       // CAが表示されない、またはスキップリンクが見つからない場合
-      console.log('ℹ️ ログイン後CAは表示されませんでした')
     }
   }
 
