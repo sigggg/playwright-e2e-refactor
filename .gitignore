@@ -31,3 +31,6 @@ tests/
 
 # 環境変数ファイル（機密情報を含む）
 .env
+
+# Claude Code ローカル設定（機密情報を含む）
+settings.local.json
