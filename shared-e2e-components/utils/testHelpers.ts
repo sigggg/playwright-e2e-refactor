@@ -170,10 +170,10 @@ export class TestHelpers {
 
   /**
    * ページの読み込み完了待機
-   * 
+   *
    * @param timeout タイムアウト時間（ミリ秒）
    * @description
-   * - networkidle、domcontentloaded、追加待機による安定化
+   * - domcontentloadedによる安定化（外部サービスエラーによるタイムアウトを防止）
    * - ページ遷移や初期表示の安定化に利用
    */
   async waitForPageLoad(timeout: number = 30000): Promise<void> {

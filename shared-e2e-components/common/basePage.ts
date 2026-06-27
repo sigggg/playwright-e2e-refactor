@@ -42,7 +42,7 @@ export abstract class BasePage {
    * @param url 遷移先URL（省略時はクラス定義のURLを使用）
    * @param options ナビゲーションオプション
    */
-  async navigate(url?: string, options?: { waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' }): Promise<void> {
+  async navigate(url?: string, options?: { waitUntil?: 'load' | 'domcontentloaded' }): Promise<void> {
     const targetUrl = url || this.url
     if (!targetUrl) {
       throw new Error('ナビゲーション先のURLが指定されていません')

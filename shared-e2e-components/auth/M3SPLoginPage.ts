@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test'
+import { Page, Locator } from '@playwright/test'
 import { BasePage } from '../common/basePage'
 
 /**
@@ -22,10 +22,27 @@ export interface SPLoginCredentials {
  * - URL: 環境変数 SP_BASE_URL から取得（デフォルト: https://sp.m3.com/）
  */
 export class M3SPLoginPage extends BasePage {
+  readonly menuButton: Locator
+  readonly loginIdField: Locator
+  readonly passwordField: Locator
+  readonly loginButton: Locator
+  readonly caModal: Locator
+  readonly skipLink: Locator
+  readonly usernameElement: Locator
+  readonly logoutLink: Locator
+
   constructor(page: Page) {
     super(page)
     // 環境変数からSP URLを取得（環境切り替え対応）
     this.url = process.env.SP_BASE_URL || 'https://sp.m3.com/'
+    this.menuButton = page.getByRole('button', { name: 'メニュー' })
+    this.loginIdField = page.getByRole('textbox').first()
+    this.passwordField = page.getByRole('textbox').nth(1)
+    this.loginButton = page.getByRole('button', { name: /ログイン/ })
+    this.caModal = page.locator('.after-login-sp_wrap')
+    this.skipLink = page.locator('.after-login-sp_btn a:has-text("スキップする")')
+    this.usernameElement = page.locator('.atlas-sp-userinfo__name')
+    this.logoutLink = page.getByRole('link', { name: 'ログアウト' })
   }
 
   /**
@@ -116,8 +133,7 @@ export class M3SPLoginPage extends BasePage {
   private async ensureLoginFormVisible(): Promise<boolean> {
     // ログイン済みかどうかを確認（メニューボタンの存在で判定）
     try {
-      const menuButton = this.page.getByRole('button', { name: 'メニュー' })
-      const isVisible = await menuButton.isVisible()
+      const isVisible = await this.menuButton.isVisible()
       if (isVisible) {
         return false // 既にログイン済み
       }
@@ -126,8 +142,7 @@ export class M3SPLoginPage extends BasePage {
     }
 
     // ログインフォームが表示されているか確認
-    const loginIdField = this.page.getByRole('textbox').first()
-    const loginFormExists = await loginIdField.isVisible().catch(() => false)
+    const loginFormExists = await this.loginIdField.isVisible().catch(() => false)
 
     if (!loginFormExists) {
       return false // ログインフォームがない = 既にログイン済み
@@ -143,13 +158,11 @@ export class M3SPLoginPage extends BasePage {
   private async fillLoginCredentials(credentials: SPLoginCredentials): Promise<void> {
     try {
       // ログインID入力（最初のテキストボックス）
-      const loginIdField = this.page.getByRole('textbox').first()
-      await loginIdField.waitFor({ state: 'visible' })
-      await loginIdField.fill(credentials.username)
+      await this.loginIdField.waitFor({ state: 'visible' })
+      await this.loginIdField.fill(credentials.username)
 
       // パスワード入力（2番目のテキストボックス）
-      const passwordField = this.page.getByRole('textbox').nth(1)
-      await passwordField.fill(credentials.password)
+      await this.passwordField.fill(credentials.password)
 
     } catch (error) {
       throw new Error(`❌ ログインフォームの入力に失敗しました: ${error.message}`)
@@ -167,9 +180,7 @@ export class M3SPLoginPage extends BasePage {
     )
 
     try {
-      // ログインボタンをクリック
-      const loginButton = this.page.getByRole('button', { name: /ログイン/ })
-      await loginButton.click()
+      await this.loginButton.click()
 
       // ログインAPIレスポンスを待機
       const loginResponse = await loginResponsePromise
@@ -200,10 +211,9 @@ export class M3SPLoginPage extends BasePage {
     try {
       // SP版のユーザー名表示要素を確認（フッター内の専用クラス）
       // 例: "ユニットヨ 先生"、"ユニットヨ さん"、"ユニットヨ 様"
-      const usernameElement = this.page.locator('.atlas-sp-userinfo__name')
-      await usernameElement.waitFor({ state: 'visible' })
+      await this.usernameElement.waitFor({ state: 'visible' })
 
-      const usernameText = await usernameElement.textContent()
+      const usernameText = await this.usernameElement.textContent()
       if (usernameText && usernameText.trim()) {
         return
       }
@@ -225,15 +235,10 @@ export class M3SPLoginPage extends BasePage {
   private async skipPostLoginCA(): Promise<void> {
     try {
       // CAモーダルのコンテナが表示されるか確認（短時間待機）
-      const caModal = this.page.locator('.after-login-sp_wrap')
-      await caModal.waitFor({ state: 'visible', timeout: 3000 })
+      await this.caModal.waitFor({ state: 'visible', timeout: 3000 })
 
-      // 「スキップする」リンクを探す（CAモーダル内の.after-login-sp_btnの中）
-      const skipLink = this.page.locator('.after-login-sp_btn a:has-text("スキップする")')
-
-      if (await skipLink.isVisible()) {
-        await skipLink.click()
-        console.log('✅ ログイン後CAをスキップしました')
+      if (await this.skipLink.isVisible()) {
+        await this.skipLink.click()
 
         // スキップ後のページ遷移を待機
         await this.page.waitForLoadState('domcontentloaded')
@@ -241,7 +246,6 @@ export class M3SPLoginPage extends BasePage {
       }
     } catch {
       // CAモーダルが表示されない、またはスキップリンクが見つからない場合
-      console.log('ℹ️ ログイン後CAは表示されませんでした')
     }
   }
 
@@ -255,14 +259,12 @@ export class M3SPLoginPage extends BasePage {
   async logout(): Promise<void> {
     try {
       // 1. メニューボタンをクリック
-      const menuButton = this.page.getByRole('button', { name: 'メニュー' })
-      await menuButton.waitFor({ state: 'visible' })
-      await menuButton.click()
+      await this.menuButton.waitFor({ state: 'visible' })
+      await this.menuButton.click()
 
       // 2. ログアウトリンクをクリック
-      const logoutLink = this.page.getByRole('link', { name: 'ログアウト' })
-      await logoutLink.waitFor({ state: 'visible' })
-      await logoutLink.click()
+      await this.logoutLink.waitFor({ state: 'visible' })
+      await this.logoutLink.click()
 
       // 3. ページ遷移の完了を待機
       await this.page.waitForLoadState('domcontentloaded')
