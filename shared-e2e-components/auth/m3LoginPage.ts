@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test'
+import { Page, Locator } from '@playwright/test'
 import { BasePage } from '../common/basePage'
 
 /**
@@ -20,8 +20,25 @@ export interface LoginCredentials {
  * - 各サービス固有の遷移処理は含まない
  */
 export class M3LoginPage extends BasePage {
+  readonly loginIdField: Locator
+  readonly passwordField: Locator
+  readonly loginButton: Locator
+  readonly caContainer: Locator
+  readonly skipLink: Locator
+  readonly usernameElement: Locator
+  readonly userInfoBox: Locator
+  readonly logoutLink: Locator
+
   constructor(page: Page) {
     super(page)
+    this.loginIdField = page.locator('[name="loginId"]')
+    this.passwordField = page.locator('[name="password"]')
+    this.loginButton = page.getByRole('button', { name: /ログイン/ })
+    this.caContainer = page.locator('.m3_ca-container')
+    this.skipLink = page.locator('.m3_li-sp-notsetting a:has-text("スキップする")')
+    this.usernameElement = page.getByText(/先生|さん|様/).first()
+    this.userInfoBox = page.getByRole('menu')
+    this.logoutLink = page.getByRole('link', { name: 'ログアウト' })
   }
 
   /**
@@ -93,8 +110,7 @@ export class M3LoginPage extends BasePage {
       // 注: ログインページのUIによりplaceholderの有無が異なる
       //     （/open/login はplaceholderあり、/login?promotionCode=... はplaceholderなし）。
       //     name="loginId" はいずれのUIにも共通して存在するため、name属性ベースで統一する
-      const loginIdField = this.page.locator('[name="loginId"]')
-      await loginIdField.waitFor({ state: 'visible' })
+      await this.loginIdField.waitFor({ state: 'visible' })
       return
     } catch (error: unknown) {
       // ログインフォームが非表示の場合、ログインボタンを探索
@@ -138,14 +154,12 @@ export class M3LoginPage extends BasePage {
   private async fillLoginCredentials(credentials: LoginCredentials): Promise<void> {
     try {
       // ログインID入力フィールド（name属性ベースセレクタ）
-      const loginIdField = this.page.locator('[name="loginId"]')
-      await loginIdField.waitFor({ state: 'visible' })
-      await loginIdField.fill(credentials.username)
+      await this.loginIdField.waitFor({ state: 'visible' })
+      await this.loginIdField.fill(credentials.username)
 
       // パスワード入力フィールド（name属性ベースセレクタ）
-      const passwordField = this.page.locator('[name="password"]')
-      await passwordField.waitFor({ state: 'visible' })
-      await passwordField.fill(credentials.password)
+      await this.passwordField.waitFor({ state: 'visible' })
+      await this.passwordField.fill(credentials.password)
 
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -167,11 +181,8 @@ export class M3LoginPage extends BasePage {
     )
 
     try {
-      // ログインボタンを特定（役割ベースセレクタを優先）
-      const loginButton = this.page.getByRole('button', { name: /ログイン/ })
-
-      await loginButton.waitFor({ state: 'visible' })
-      await loginButton.click()
+      await this.loginButton.waitFor({ state: 'visible' })
+      await this.loginButton.click()
 
       // APIレスポンスの確認
       const loginResponse = await loginResponsePromise
@@ -199,11 +210,9 @@ export class M3LoginPage extends BasePage {
     try {
       // M3.comヘッダーのユーザー名表示を確認（役割ベースセレクタを優先）
       // ユーザー名は「〇〇先生」「〇〇さん」または「〇〇様」の形式で表示される
-      const usernameElement = this.page.getByText(/先生|さん|様/).first()
+      await this.usernameElement.waitFor({ state: 'visible' })
 
-      await usernameElement.waitFor({ state: 'visible' })
-
-      const usernameText = await usernameElement.textContent()
+      const usernameText = await this.usernameElement.textContent()
       if (usernameText && usernameText.trim()) {
         return
       }
@@ -225,14 +234,10 @@ export class M3LoginPage extends BasePage {
   private async skipPostLoginCA(): Promise<void> {
     try {
       // CAコンテナが表示されるか確認（短時間待機）
-      const caContainer = this.page.locator('.m3_ca-container')
-      await caContainer.waitFor({ state: 'visible', timeout: 3000 })
+      await this.caContainer.waitFor({ state: 'visible', timeout: 3000 })
 
-      // 「スキップする」リンクを探す
-      const skipLink = this.page.locator('.m3_li-sp-notsetting a:has-text("スキップする")')
-
-      if (await skipLink.isVisible()) {
-        await skipLink.click()
+      if (await this.skipLink.isVisible()) {
+        await this.skipLink.click()
         console.log('✅ ログイン後CAをスキップしました')
 
         // スキップ後のページ遷移を待機
@@ -255,18 +260,15 @@ export class M3LoginPage extends BasePage {
   async logout(): Promise<void> {
     try {
       // 1. ユーザー名をクリックしてドロップダウンを開く（役割ベースセレクタを優先）
-      const userNameButton = this.page.getByText(/先生|さん|様/).first()
-      await userNameButton.waitFor({ state: 'visible' })
-      await userNameButton.click()
+      await this.usernameElement.waitFor({ state: 'visible' })
+      await this.usernameElement.click()
 
       // 2. ドロップダウンが表示されるまで待機
-      const userInfoBox = this.page.getByRole('menu')
-      await userInfoBox.waitFor({ state: 'visible' })
+      await this.userInfoBox.waitFor({ state: 'visible' })
 
       // 3. ログアウトリンクをクリック（役割ベースセレクタを優先）
-      const logoutLink = this.page.getByRole('link', { name: 'ログアウト' })
-      await logoutLink.waitFor({ state: 'visible' })
-      await logoutLink.click()
+      await this.logoutLink.waitFor({ state: 'visible' })
+      await this.logoutLink.click()
 
       // 4. ページ遷移の完了を待機
       await this.page.waitForLoadState('domcontentloaded')
@@ -300,3 +302,4 @@ export class M3LoginPage extends BasePage {
     }
   }
 }
+

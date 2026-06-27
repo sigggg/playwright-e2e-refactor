@@ -87,3 +87,4 @@ test.describe('HeaderComponentSP動作確認（SP版）', () => {
     })
   })
 })
+

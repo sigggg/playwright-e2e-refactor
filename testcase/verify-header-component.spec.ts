@@ -70,3 +70,4 @@ test.describe('HeaderComponent動作確認', () => {
     // 例: header1.userName = page.locator('test') ← コンパイルエラーになる
   })
 })
+

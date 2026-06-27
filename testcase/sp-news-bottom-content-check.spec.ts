@@ -77,3 +77,4 @@ test('C001_SP_医療ニュース_下部コンテンツ存在チェック', async
     await verifyBottomContent()
   })
 })
+

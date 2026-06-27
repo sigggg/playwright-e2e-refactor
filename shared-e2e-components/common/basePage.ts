@@ -321,3 +321,4 @@ export abstract class BasePage {
     await this.waitForPageLoad()
   }
 }
+

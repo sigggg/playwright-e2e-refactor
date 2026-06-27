@@ -47,3 +47,4 @@ class HtmlDumpReporter implements Reporter {
 }
 
 export default HtmlDumpReporter
+

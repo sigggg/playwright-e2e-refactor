@@ -9,6 +9,7 @@
  * @security
  * - これらはQA環境専用の共有テストアカウント
  * - 本番環境へのアクセス権限は持たない
+ * - パスワードは平文でGit管理しているが、QA環境専用・本番影響なしのため運用上許容している
  * - 定期的なパスワード変更は不要（固定値）
  */
 
@@ -116,3 +117,4 @@ export const TEST_ACCOUNTS = {
   backroom: BACKROOM_ACCOUNT,
   m3Internal: M3_INTERNAL_ACCOUNT
 }
+

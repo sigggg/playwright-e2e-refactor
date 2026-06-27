@@ -90,3 +90,4 @@ export async function waitForEmail(
     `タイムアウト: メールが見つかりませんでした (subject: ${subject} from: ${from_address} to: ${to_address})`,
   )
 }
+
