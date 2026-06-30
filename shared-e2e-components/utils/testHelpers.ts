@@ -170,15 +170,14 @@ export class TestHelpers {
 
   /**
    * ページの読み込み完了待機
-   * 
+   *
    * @param timeout タイムアウト時間（ミリ秒）
    * @description
-   * - networkidle、domcontentloaded、追加待機による安定化
+   * - domcontentloadedによる安定化（外部サービスエラーによるタイムアウトを防止）
    * - ページ遷移や初期表示の安定化に利用
    */
   async waitForPageLoad(timeout: number = 30000): Promise<void> {
     try {
-      await this.page.waitForLoadState('networkidle', { timeout })
       await this.page.waitForLoadState('domcontentloaded', { timeout })
     } catch (error) {
       console.warn(`⚠️ ページ読み込みタイムアウトが発生しましたが、テストを続行します: ${error.message}`)
@@ -1018,3 +1017,4 @@ export class TestHelpers {
  * - **アクセシビリティ**: スクリーンリーダー等の支援技術と同じ要素特定方法
  * - **保守性**: セマンティックな意味に基づくため、変更に強い
  */
+

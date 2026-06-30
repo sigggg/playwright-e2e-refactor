@@ -24,7 +24,7 @@ export default defineConfig({
 
   use: {
     baseURL: process.env.BASE_URL || 'https://www.m3.com',
-    headless: false, // trueにするとヘッドレスモード、falseでブラウザ表示
+    headless: true,
     viewport: { width: 1280, height: 800 },
     ignoreHTTPSErrors: true,
     video: 'retain-on-failure',
@@ -64,3 +64,4 @@ export default defineConfig({
     },
   ],
 });
+

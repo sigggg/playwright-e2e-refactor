@@ -1,6 +1,7 @@
 import { chromium, FullConfig } from '@playwright/test'
 import { M3LoginPage } from '../shared-e2e-components/auth/m3LoginPage'
 import { HeaderComponent } from '../shared-e2e-components/common/headerComponent'
+import { TEST_ACCOUNTS } from './data/test-accounts'
 import * as dotenv from 'dotenv'
 import * as path from 'path'
 
@@ -53,8 +54,8 @@ async function globalSetup(config: FullConfig) {
     // M3.comにログイン
     const loginPage = new M3LoginPage(page)
     await loginPage.performLogin({
-      username: process.env.USERNAME || '',
-      password: process.env.PASSWORD || ''
+      username: TEST_ACCOUNTS.pc.username,
+      password: TEST_ACCOUNTS.pc.password
     })
 
     // ログイン成功確認（ヘッダーにユーザー名が表示されることを確認）
@@ -86,3 +87,4 @@ async function globalSetup(config: FullConfig) {
 }
 
 export default globalSetup
+
